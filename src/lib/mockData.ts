@@ -18,10 +18,10 @@ export const rushees = [
     name: "Daniel Wang",
     number: 2,
     major: "Computer Science",
-    year: "Freshman",
+    year: "Sophomore",
     photo:
        "https://images.unsplash.com/photo-1587300003388-59208cc962cb?w=400&h=400&fit=crop",
-    events: ["BBQ", "Professional Night"],
+    events: ["Professional Night", "Professional Night"],
     applicationSummary:
       "Interested in software engineering, technical development, and meeting other motivated students.",
     reviews: 5,
@@ -32,10 +32,10 @@ export const rushees = [
     name: "Eesha Atluri",
     number: 3,
     major: "Computer Science",
-    year: "Freshman",
+    year: "Sophomore",
     photo:
       "https://images.unsplash.com/photo-1543466835-00a7907e9de1?w=400&h=400&fit=crop",
-    events: ["Info Night", "BBQ"],
+    events: ["Info Night", "Professional Night"],
     applicationSummary:
       "Interested in product marketing, tech, and joining a strong professional community.",
     reviews: 3,
@@ -46,7 +46,6 @@ export const rushees = [
 export const events = [
   "Info Night",
   "Game Night",
-  "BBQ",
   "Professional Night",
   "Coffee Chats",
 ];
@@ -70,7 +69,7 @@ export const feedback = [
     rusheeId: "2",
     rusheeName: "Daniel Wang",
     rusheeNumber: 2,
-    events: ["BBQ"],
+    events: ["Game Night"],
     communication: 3,
     passion: 4,
     cultureFit: 3,
