@@ -1,8 +1,9 @@
 "use client";
 
-import { useState } from "react";
-import { events } from "@/lib/mockData";
+import { useEffect, useState } from "react";
 import AdminNav from "@/app/components/AdminNav";
+import { events } from "@/lib/mockData";
+import { getStoredRushees, type Rushee } from "@/lib/rusheeStorage";
 
 type EventItem = {
   id: string;
@@ -19,12 +20,27 @@ const startingEvents: EventItem[] = events.map((event, index) => ({
 }));
 
 export default function AdminEventsPage() {
-  const [eventList, setEventList] = useState<EventItem[]>(startingEvents);
+  const [eventList, setEventList] = useState<EventItem[]>([]);
   const [eventName, setEventName] = useState("");
   const [eventDate, setEventDate] = useState("");
   const [eventType, setEventType] = useState<"Open Rush" | "Closed Rush">(
     "Open Rush"
   );
+
+  useEffect(() => {
+    const savedEventsString = localStorage.getItem("tek-events");
+
+    const savedEvents: EventItem[] = savedEventsString
+      ? JSON.parse(savedEventsString)
+      : startingEvents;
+
+    setEventList(savedEvents);
+  }, []);
+
+  function saveEvents(updatedEvents: EventItem[]) {
+    setEventList(updatedEvents);
+    localStorage.setItem("tek-events", JSON.stringify(updatedEvents));
+  }
 
   function addEvent() {
     if (!eventName.trim()) {
@@ -32,38 +48,66 @@ export default function AdminEventsPage() {
       return;
     }
 
+    const alreadyExists = eventList.some(
+      (event) => event.name.toLowerCase() === eventName.trim().toLowerCase()
+    );
+
+    if (alreadyExists) {
+      alert("That event already exists.");
+      return;
+    }
+
     const newEvent: EventItem = {
       id: String(Date.now()),
-      name: eventName,
+      name: eventName.trim(),
       date: eventDate,
       type: eventType,
     };
 
-    setEventList([...eventList, newEvent]);
+    saveEvents([...eventList, newEvent]);
+
     setEventName("");
     setEventDate("");
     setEventType("Open Rush");
   }
 
-  function deleteEvent(id: string) {
-    setEventList(eventList.filter((event) => event.id !== id));
+  function deleteEvent(eventToDelete: EventItem) {
+    const confirmDelete = confirm(
+      `Delete "${eventToDelete.name}"? This will also remove it from every rushee's attended events.`
+    );
+
+    if (!confirmDelete) return;
+
+    const updatedEvents = eventList.filter(
+      (event) => event.id !== eventToDelete.id
+    );
+
+    saveEvents(updatedEvents);
+
+    const storedRushees = getStoredRushees();
+
+    const updatedRushees: Rushee[] = storedRushees.map((rushee) => ({
+      ...rushee,
+      events: rushee.events.filter((event) => event !== eventToDelete.name),
+    }));
+
+    localStorage.setItem("tek-rushees", JSON.stringify(updatedRushees));
   }
 
   return (
     <main className="min-h-screen bg-[#F8F6F1] text-[#061A33]">
-        <AdminNav />
+      <AdminNav />
+
       <header className="bg-[#061A33] px-6 py-5 text-white">
-
-
-        <p className="mt-4 text-xs uppercase tracking-[0.25em] text-[#C49A45]">
+        <p className="text-xs uppercase tracking-[0.25em] text-[#C49A45]">
           Admin
         </p>
 
         <h1 className="mt-1 text-2xl font-extrabold">Manage Events</h1>
 
         <p className="mt-2 text-sm text-slate-300">
-          Add open rush and closed rush events that brothers can select when
-          submitting feedback.
+          Add open rush and closed rush events. Deleting an event also removes it
+          from rushee profiles.
         </p>
       </header>
 
@@ -76,7 +120,7 @@ export default function AdminEventsPage() {
               Event Name
               <input
                 value={eventName}
-                onChange={(e) => setEventName(e.target.value)}
+                onChange={(event) => setEventName(event.target.value)}
                 placeholder="Info Night"
                 className="mt-2 w-full rounded-xl border border-slate-300 px-4 py-3 font-normal outline-none"
               />
@@ -86,7 +130,7 @@ export default function AdminEventsPage() {
               Event Date
               <input
                 value={eventDate}
-                onChange={(e) => setEventDate(e.target.value)}
+                onChange={(event) => setEventDate(event.target.value)}
                 type="date"
                 className="mt-2 w-full rounded-xl border border-slate-300 px-4 py-3 font-normal outline-none"
               />
@@ -96,8 +140,8 @@ export default function AdminEventsPage() {
               Event Type
               <select
                 value={eventType}
-                onChange={(e) =>
-                  setEventType(e.target.value as "Open Rush" | "Closed Rush")
+                onChange={(event) =>
+                  setEventType(event.target.value as "Open Rush" | "Closed Rush")
                 }
                 className="mt-2 w-full rounded-xl border border-slate-300 px-4 py-3 font-normal outline-none"
               >
@@ -120,6 +164,12 @@ export default function AdminEventsPage() {
           <h2 className="mb-4 text-xl font-extrabold">Current Events</h2>
 
           <div className="space-y-3">
+            {eventList.length === 0 && (
+              <div className="rounded-2xl bg-white p-5 text-sm text-slate-600 shadow-sm">
+                No events have been added yet.
+              </div>
+            )}
+
             {eventList.map((event) => (
               <div
                 key={event.id}
@@ -127,6 +177,7 @@ export default function AdminEventsPage() {
               >
                 <div>
                   <p className="font-extrabold">{event.name}</p>
+
                   <p className="text-xs text-slate-500">
                     {event.date || "No date set"} · {event.type}
                   </p>
@@ -138,7 +189,8 @@ export default function AdminEventsPage() {
                   </button>
 
                   <button
-                    onClick={() => deleteEvent(event.id)}
+                    type="button"
+                    onClick={() => deleteEvent(event)}
                     className="rounded-full border border-slate-300 px-3 py-1 text-xs font-bold text-slate-500"
                   >
                     Delete
