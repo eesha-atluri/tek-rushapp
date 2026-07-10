@@ -2,23 +2,43 @@
 
 import { useEffect, useState } from "react";
 import AdminNav from "@/app/components/AdminNav";
-import { events, rushees } from "@/lib/mockData";
+import { events as defaultEvents } from "@/lib/mockData";
+import { getStoredRushees, type Rushee } from "@/lib/rusheeStorage";
 
-type Rushee = {
+type EventItem = {
   id: string;
   name: string;
-  number: number;
-  major: string;
-  year: string;
-  photo: string;
-  events: string[];
-  applicationSummary: string;
-  reviews: number;
-  votedBy: string[];
+  date: string;
+  type: "Open Rush" | "Closed Rush";
 };
+
+function getStoredEvents(): EventItem[] {
+  if (typeof window === "undefined") {
+    return defaultEvents.map((event, index) => ({
+      id: String(index + 1),
+      name: event,
+      date: "",
+      type: "Open Rush",
+    }));
+  }
+
+  const savedEventsString = localStorage.getItem("tek-events");
+
+  if (savedEventsString) {
+    return JSON.parse(savedEventsString);
+  }
+
+  return defaultEvents.map((event, index) => ({
+    id: String(index + 1),
+    name: event,
+    date: "",
+    type: "Open Rush",
+  }));
+}
 
 export default function AdminRusheesPage() {
   const [rusheeList, setRusheeList] = useState<Rushee[]>([]);
+  const [eventList, setEventList] = useState<EventItem[]>([]);
   const [editingId, setEditingId] = useState<string | null>(null);
 
   const [name, setName] = useState("");
@@ -30,13 +50,8 @@ export default function AdminRusheesPage() {
   const [photoPreview, setPhotoPreview] = useState<string>("");
 
   useEffect(() => {
-    const savedRusheesString = localStorage.getItem("tek-rushees");
-
-    const savedRushees: Rushee[] = savedRusheesString
-      ? JSON.parse(savedRusheesString)
-      : rushees;
-
-    setRusheeList(savedRushees);
+    setRusheeList(getStoredRushees());
+    setEventList(getStoredEvents());
   }, []);
 
   function saveRushees(updatedRushees: Rushee[]) {
@@ -256,27 +271,33 @@ export default function AdminRusheesPage() {
           <div className="mt-5">
             <p className="text-sm font-semibold">Events Attended</p>
 
-            <div className="mt-3 flex flex-wrap gap-2">
-              {events.map((event) => {
-                const isSelected = selectedEvents.includes(event);
+            {eventList.length === 0 ? (
+              <p className="mt-2 text-sm text-slate-500">
+                No events available. Add events in Manage Events first.
+              </p>
+            ) : (
+              <div className="mt-3 flex flex-wrap gap-2">
+                {eventList.map((event) => {
+                  const isSelected = selectedEvents.includes(event.name);
 
-                return (
-                  <button
-                    key={event}
-                    type="button"
-                    onClick={() => toggleEvent(event)}
-                    className={`rounded-full border px-3 py-2 text-xs font-semibold ${
-                      isSelected
-                        ? "border-[#9B1232] bg-[#9B1232] text-white"
-                        : "border-slate-300 bg-white"
-                    }`}
-                  >
-                    {isSelected ? "✓ " : ""}
-                    {event}
-                  </button>
-                );
-              })}
-            </div>
+                  return (
+                    <button
+                      key={event.id}
+                      type="button"
+                      onClick={() => toggleEvent(event.name)}
+                      className={`rounded-full border px-3 py-2 text-xs font-semibold ${
+                        isSelected
+                          ? "border-[#9B1232] bg-[#9B1232] text-white"
+                          : "border-slate-300 bg-white"
+                      }`}
+                    >
+                      {isSelected ? "✓ " : ""}
+                      {event.name}
+                    </button>
+                  );
+                })}
+              </div>
+            )}
           </div>
 
           <label className="mt-5 block text-sm font-semibold">
