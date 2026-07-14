@@ -51,13 +51,13 @@ export default function AdminRusheeProfilePage() {
 
   if (!rushee) {
     return (
-      <main className="min-h-screen bg-[#F8F6F1] text-[#061A33]">
+      <main className="min-h-screen bg-[#F4F1EA] text-[#061A33]">
         <AdminNav />
 
         <section className="p-6">
           <p>Rushee not found.</p>
 
-          <a href="/admin/hash" className="mt-4 block font-bold text-[#9B1232]">
+          <a href="/admin/hash" className="mt-4 block font-bold text-[#061A33]">
             Back to Hash Dashboard
           </a>
         </section>
@@ -94,7 +94,7 @@ export default function AdminRusheeProfilePage() {
   ).length;
 
   return (
-    <main className="min-h-screen bg-[#F8F6F1] text-[#061A33]">
+    <main className="min-h-screen bg-[#F4F1EA] text-[#061A33]">
       <AdminNav />
 
       <header className="bg-[#061A33] px-6 py-5 text-white">
@@ -144,7 +144,7 @@ export default function AdminRusheeProfilePage() {
 
                 <a
                   href="/admin/rushees"
-                  className="rounded-xl bg-[#9B1232] px-4 py-2 text-sm font-bold text-white"
+                  className="rounded-xl bg-[#061A33] px-4 py-2 text-sm font-bold text-white"
                 >
                   Edit in Manage Rushees
                 </a>
@@ -152,7 +152,7 @@ export default function AdminRusheeProfilePage() {
             </div>
           </div>
 
-          <div className="mt-6 rounded-2xl bg-[#F8F6F1] p-4">
+          <div className="mt-6 rounded-2xl bg-[#F4F1EA] p-4">
             <p className="text-xs font-bold uppercase tracking-wide text-slate-500">
               Application Summary
             </p>
@@ -163,48 +163,48 @@ export default function AdminRusheeProfilePage() {
           </div>
 
           <div className="mt-6 grid grid-cols-2 gap-3 md:grid-cols-5">
-            <div className="rounded-xl bg-[#F8F6F1] p-4 text-center">
+            <div className="rounded-xl bg-[#F4F1EA] p-4 text-center">
               <p className="text-xl font-extrabold">{communicationAvg}</p>
               <p className="text-xs text-slate-500">Communication</p>
             </div>
 
-            <div className="rounded-xl bg-[#F8F6F1] p-4 text-center">
+            <div className="rounded-xl bg-[#F4F1EA] p-4 text-center">
               <p className="text-xl font-extrabold">{passionAvg}</p>
               <p className="text-xs text-slate-500">Passion</p>
             </div>
 
-            <div className="rounded-xl bg-[#F8F6F1] p-4 text-center">
+            <div className="rounded-xl bg-[#F4F1EA] p-4 text-center">
               <p className="text-xl font-extrabold">{cultureFitAvg}</p>
               <p className="text-xs text-slate-500">Culture Fit</p>
             </div>
 
-            <div className="rounded-xl bg-[#F8F6F1] p-4 text-center">
+            <div className="rounded-xl bg-[#F4F1EA] p-4 text-center">
               <p className="text-xl font-extrabold">{fitAddAvg}</p>
               <p className="text-xs text-slate-500">Fit/Add Avg</p>
             </div>
 
-            <div className="rounded-xl bg-[#F8F6F1] p-4 text-center">
+            <div className="rounded-xl bg-[#F4F1EA] p-4 text-center">
               <p className="text-xl font-extrabold">{rusheeFeedback.length}</p>
               <p className="text-xs text-slate-500">Reviews</p>
             </div>
           </div>
 
           <div className="mt-6 grid grid-cols-3 gap-3 text-center">
-            <div className="rounded-xl border border-slate-200 p-4">
+            <div className="rounded-xl border border-[#E5E0D8] p-4">
               <p className="text-xl font-extrabold text-[#1F6B3A]">
                 {fitCount}
               </p>
               <p className="text-xs text-slate-500">Fit</p>
             </div>
 
-            <div className="rounded-xl border border-slate-200 p-4">
+            <div className="rounded-xl border border-[#E5E0D8] p-4">
               <p className="text-xl font-extrabold text-[#061A33]">
                 {addCount}
               </p>
               <p className="text-xs text-slate-500">Add</p>
             </div>
 
-            <div className="rounded-xl border border-slate-200 p-4">
+            <div className="rounded-xl border border-[#E5E0D8] p-4">
               <p className="text-xl font-extrabold text-slate-600">
                 {neitherCount}
               </p>
@@ -217,7 +217,7 @@ export default function AdminRusheeProfilePage() {
 
             <div className="mt-3 space-y-3">
               {rusheeFeedback.length === 0 && (
-                <div className="rounded-xl bg-[#F8F6F1] p-4 text-sm text-slate-600">
+                <div className="rounded-xl bg-[#F4F1EA] p-4 text-sm text-slate-600">
                   No feedback submitted yet.
                 </div>
               )}
@@ -225,7 +225,7 @@ export default function AdminRusheeProfilePage() {
               {rusheeFeedback.map((item) => (
                 <div
                   key={item.id}
-                  className="rounded-xl border border-slate-200 p-4"
+                  className="rounded-xl border border-[#E5E0D8] p-4"
                 >
                   <div className="grid grid-cols-2 gap-2 text-sm md:grid-cols-5">
                     <p>Comm: {item.communication}</p>

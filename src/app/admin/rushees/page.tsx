@@ -145,7 +145,7 @@ export default function AdminRusheesPage() {
   }
 
   return (
-    <main className="min-h-screen bg-[#F8F6F1] text-[#061A33]">
+    <main className="min-h-screen bg-[#F4F1EA] text-[#061A33]">
       <AdminNav />
 
       <header className="bg-[#061A33] px-6 py-5 text-white">
@@ -224,7 +224,7 @@ export default function AdminRusheesPage() {
           <div className="mt-5">
             <p className="text-sm font-semibold">Photo Upload</p>
 
-            <label className="mt-2 flex h-48 cursor-pointer flex-col items-center justify-center rounded-2xl border border-dashed border-slate-300 bg-[#F8F6F1] px-4 text-center">
+            <label className="mt-2 flex h-48 cursor-pointer flex-col items-center justify-center rounded-2xl border border-dashed border-slate-300 bg-[#F4F1EA] px-4 text-center">
               {photoPreview ? (
                 <img
                   src={photoPreview}
@@ -233,7 +233,7 @@ export default function AdminRusheesPage() {
                 />
               ) : (
                 <>
-                  <p className="font-bold text-[#9B1232]">
+                  <p className="font-bold text-[#061A33]">
                     Upload Rushee Photo
                   </p>
                   <p className="mt-1 text-xs text-slate-500">
@@ -261,7 +261,7 @@ export default function AdminRusheesPage() {
               <button
                 type="button"
                 onClick={() => setPhotoPreview("")}
-                className="mt-2 text-sm font-bold text-[#9B1232]"
+                className="mt-2 text-sm font-bold text-[#061A33]"
               >
                 Remove photo
               </button>
@@ -287,7 +287,7 @@ export default function AdminRusheesPage() {
                       onClick={() => toggleEvent(event.name)}
                       className={`rounded-full border px-3 py-2 text-xs font-semibold ${
                         isSelected
-                          ? "border-[#9B1232] bg-[#9B1232] text-white"
+                          ? "border-[#061A33] bg-[#061A33] text-white"
                           : "border-slate-300 bg-white"
                       }`}
                     >
@@ -314,7 +314,7 @@ export default function AdminRusheesPage() {
             <button
               type="button"
               onClick={saveRushee}
-              className="rounded-xl bg-[#9B1232] px-5 py-3 font-bold text-white"
+              className="rounded-xl bg-[#061A33] px-5 py-3 font-bold text-white"
             >
               {editingId ? "Update Rushee" : "Save Rushee"}
             </button>
@@ -372,7 +372,7 @@ export default function AdminRusheesPage() {
                     <button
                       type="button"
                       onClick={() => editRushee(rushee)}
-                      className="rounded-full border border-[#9B1232] px-3 py-1 text-xs font-bold text-[#9B1232]"
+                      className="rounded-full border border-[#061A33] px-3 py-1 text-xs font-bold text-[#061A33]"
                     >
                       Edit
                     </button>

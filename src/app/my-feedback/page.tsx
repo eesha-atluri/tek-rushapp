@@ -32,7 +32,7 @@ export default function MyFeedbackPage() {
   }, []);
 
   return (
-    <main className="min-h-screen bg-[#F8F6F1] pb-20 text-[#061A33]">
+    <main className="min-h-screen bg-[#F4F1EA] pb-20 text-[#061A33]">
         <BrotherNav />
       <header className="bg-[#061A33] px-5 py-5 text-white">
         <a href="/rushees" className="text-sm font-semibold text-[#C49A45]">
@@ -65,40 +65,40 @@ export default function MyFeedbackPage() {
 
               <a
                 href={`/feedback/${item.rusheeId}`}
-                className="rounded-full border border-[#9B1232] px-3 py-1 text-xs font-bold text-[#9B1232]"
+                className="rounded-full border border-[#061A33] px-3 py-1 text-xs font-bold text-[#061A33]"
               >
                 Edit
               </a>
             </div>
 
             <div className="mt-4 grid grid-cols-5 gap-2 text-center text-xs">
-              <div className="rounded-xl bg-[#F8F6F1] p-2">
+              <div className="rounded-xl bg-[#F4F1EA] p-2">
                 <p className="font-extrabold">{item.communication}</p>
                 <p className="text-slate-500">Comm</p>
               </div>
 
-              <div className="rounded-xl bg-[#F8F6F1] p-2">
+              <div className="rounded-xl bg-[#F4F1EA] p-2">
                 <p className="font-extrabold">{item.passion}</p>
                 <p className="text-slate-500">Passion</p>
               </div>
 
-              <div className="rounded-xl bg-[#F8F6F1] p-2">
+              <div className="rounded-xl bg-[#F4F1EA] p-2">
                 <p className="font-extrabold">{item.cultureFit}</p>
                 <p className="text-slate-500">Culture</p>
               </div>
 
-              <div className="rounded-xl bg-[#F8F6F1] p-2">
+              <div className="rounded-xl bg-[#F4F1EA] p-2">
                 <p className="font-extrabold">{item.fitAddChoice}</p>
                 <p className="text-slate-500">Choice</p>
               </div>
 
-              <div className="rounded-xl bg-[#F8F6F1] p-2">
+              <div className="rounded-xl bg-[#F4F1EA] p-2">
                 <p className="font-extrabold">{item.fitAddScore}</p>
                 <p className="text-slate-500">Score</p>
               </div>
             </div>
 
-            <div className="mt-4 rounded-xl border border-slate-200 p-3">
+            <div className="mt-4 rounded-xl border border-[#E5E0D8] p-3">
               <p className="text-xs font-bold uppercase tracking-wide text-slate-500">
                 Comment
               </p>

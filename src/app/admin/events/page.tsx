@@ -95,7 +95,7 @@ export default function AdminEventsPage() {
   }
 
   return (
-    <main className="min-h-screen bg-[#F8F6F1] text-[#061A33]">
+    <main className="min-h-screen bg-[#F4F1EA] text-[#061A33]">
       <AdminNav />
 
       <header className="bg-[#061A33] px-6 py-5 text-white">
@@ -154,7 +154,7 @@ export default function AdminEventsPage() {
           <button
             type="button"
             onClick={addEvent}
-            className="mt-5 rounded-xl bg-[#9B1232] px-5 py-3 font-bold text-white"
+            className="mt-5 rounded-xl bg-[#061A33] px-5 py-3 font-bold text-white"
           >
             Add Event
           </button>
@@ -184,7 +184,7 @@ export default function AdminEventsPage() {
                 </div>
 
                 <div className="flex gap-2">
-                  <button className="rounded-full border border-[#9B1232] px-3 py-1 text-xs font-bold text-[#9B1232]">
+                  <button className="rounded-full border border-[#061A33] px-3 py-1 text-xs font-bold text-[#061A33]">
                     Edit
                   </button>
 

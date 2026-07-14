@@ -39,7 +39,7 @@ export default function AdminDashboardPage() {
   }, []);
 
   return (
-    <main className="min-h-screen bg-[#F8F6F1] text-[#061A33]">
+    <main className="min-h-screen bg-[#F4F1EA] text-[#061A33]">
         <AdminNav />
       <header className="bg-[#061A33] px-6 py-5 text-white">
        
@@ -95,7 +95,7 @@ export default function AdminDashboardPage() {
 
   <a
     href="/admin/rushees"
-    className="rounded-xl bg-[#9B1232] px-4 py-2 text-sm font-bold text-white"
+    className="rounded-xl bg-[#061A33] px-4 py-2 text-sm font-bold text-white"
   >
     Add / Edit Rushees
   </a>
@@ -184,7 +184,7 @@ export default function AdminDashboardPage() {
 
                       <a
                         href={`/rushees/${rushee.id}`}
-                        className="text-sm font-bold text-[#9B1232]"
+                        className="text-sm font-bold text-[#061A33]"
                       >
                         View
                       </a>
@@ -197,44 +197,44 @@ export default function AdminDashboardPage() {
                 </div>
 
                 <div className="mt-4 grid grid-cols-2 gap-2 text-center md:grid-cols-5">
-                  <div className="rounded-xl bg-[#F8F6F1] p-3">
+                  <div className="rounded-xl bg-[#F4F1EA] p-3">
                     <p className="font-extrabold">{communicationAvg}</p>
                     <p className="text-xs text-slate-500">Comm</p>
                   </div>
 
-                  <div className="rounded-xl bg-[#F8F6F1] p-3">
+                  <div className="rounded-xl bg-[#F4F1EA] p-3">
                     <p className="font-extrabold">{passionAvg}</p>
                     <p className="text-xs text-slate-500">Passion</p>
                   </div>
 
-                  <div className="rounded-xl bg-[#F8F6F1] p-3">
+                  <div className="rounded-xl bg-[#F4F1EA] p-3">
                     <p className="font-extrabold">{cultureFitAvg}</p>
                     <p className="text-xs text-slate-500">Culture</p>
                   </div>
 
-                  <div className="rounded-xl bg-[#F8F6F1] p-3">
+                  <div className="rounded-xl bg-[#F4F1EA] p-3">
                     <p className="font-extrabold">{fitAddAvg}</p>
                     <p className="text-xs text-slate-500">Fit/Add Avg</p>
                   </div>
 
-                  <div className="rounded-xl bg-[#F8F6F1] p-3">
+                  <div className="rounded-xl bg-[#F4F1EA] p-3">
                     <p className="font-extrabold">{rusheeFeedback.length}</p>
                     <p className="text-xs text-slate-500">Reviews</p>
                   </div>
                 </div>
 
                 <div className="mt-4 grid grid-cols-3 gap-2 text-center">
-                  <div className="rounded-xl border border-slate-200 p-3">
+                  <div className="rounded-xl border border-[#E5E0D8] p-3">
                     <p className="font-extrabold text-green-700">{fitCount}</p>
                     <p className="text-xs text-slate-500">Fit</p>
                   </div>
 
-                  <div className="rounded-xl border border-slate-200 p-3">
+                  <div className="rounded-xl border border-[#E5E0D8] p-3">
                     <p className="font-extrabold text-blue-700">{addCount}</p>
                     <p className="text-xs text-slate-500">Add</p>
                   </div>
 
-                  <div className="rounded-xl border border-slate-200 p-3">
+                  <div className="rounded-xl border border-[#E5E0D8] p-3">
                     <p className="font-extrabold text-slate-600">
                       {neitherCount}
                     </p>
@@ -243,7 +243,7 @@ export default function AdminDashboardPage() {
                 </div>
 
                 {rusheeFeedback.length > 0 && (
-                  <div className="mt-4 rounded-xl border border-slate-200 p-3">
+                  <div className="mt-4 rounded-xl border border-[#E5E0D8] p-3">
                     <p className="text-xs font-bold uppercase tracking-wide text-slate-500">
                       Comments
                     </p>
@@ -252,7 +252,7 @@ export default function AdminDashboardPage() {
                       {rusheeFeedback.map((item) => (
                         <p
                           key={item.id}
-                          className="rounded-lg bg-[#F8F6F1] p-2 text-sm text-slate-700"
+                          className="rounded-lg bg-[#F4F1EA] p-2 text-sm text-slate-700"
                         >
                           {item.comment}
                         </p>

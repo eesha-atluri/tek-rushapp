@@ -52,11 +52,11 @@ function getStatusStyle(status: RusheeStatus) {
   }
 
   if (status === "Maybe") {
-    return "bg-[#F8EAF0] text-[#9B1232]";
+    return "bg-[#F8EAF0] text-[#061A33]";
   }
 
   if (status === "Do Not Continue") {
-    return "bg-[#F5E5E8] text-[#9B1232]";
+    return "bg-[#F5E5E8] text-[#061A33]";
   }
 
   return "bg-slate-100 text-slate-700";
@@ -69,10 +69,10 @@ function getDecisionButtonStyle(
   const isSelected = currentStatus === buttonStatus;
 
   if (isSelected) {
-    return "bg-gradient-to-r from-[#061A33] to-[#9B1232] text-white border-transparent";
+    return "bg-[#061A33] text-white border-[#061A33]";
   }
 
-  return "bg-white text-[#061A33] border-[#061A33] hover:bg-[#F8F6F1]";
+  return "bg-white text-[#061A33] border-[#061A33] hover:bg-[#F4F1EA]";
 }
 
 export default function HashDashboardPage() {
@@ -336,7 +336,7 @@ export default function HashDashboardPage() {
   }
 
   return (
-    <main className="min-h-screen bg-[#F8F6F1] text-[#061A33]">
+    <main className="min-h-screen bg-[#F4F1EA] text-[#061A33]">
       <AdminNav />
 
       <header className="bg-[#061A33] px-6 py-5 text-white">
@@ -397,7 +397,7 @@ export default function HashDashboardPage() {
             className="rounded-2xl bg-white p-4 text-left shadow-sm"
           >
             <p className="text-sm text-slate-500">Maybe</p>
-            <p className="text-3xl font-extrabold text-[#9B1232]">
+            <p className="text-3xl font-extrabold text-[#061A33]">
               {statusCounts.maybe}
             </p>
           </button>
@@ -420,7 +420,7 @@ export default function HashDashboardPage() {
               value={search}
               onChange={(event) => setSearch(event.target.value)}
               placeholder={`Search by ${searchBy.toLowerCase()}...`}
-              className="mt-2 w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm font-normal shadow-sm outline-none"
+              className="mt-2 w-full rounded-xl border border-[#E5E0D8] bg-white px-4 py-3 text-sm font-normal shadow-sm outline-none"
             />
           </label>
 
@@ -429,7 +429,7 @@ export default function HashDashboardPage() {
             <select
               value={searchBy}
               onChange={(event) => setSearchBy(event.target.value as SearchBy)}
-              className="mt-2 w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm font-normal shadow-sm outline-none"
+              className="mt-2 w-full rounded-xl border border-[#E5E0D8] bg-white px-4 py-3 text-sm font-normal shadow-sm outline-none"
             >
               <option>All</option>
               <option>Name</option>
@@ -444,7 +444,7 @@ export default function HashDashboardPage() {
             <select
               value={sortBy}
               onChange={(event) => setSortBy(event.target.value as SortBy)}
-              className="mt-2 w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm font-normal shadow-sm outline-none"
+              className="mt-2 w-full rounded-xl border border-[#E5E0D8] bg-white px-4 py-3 text-sm font-normal shadow-sm outline-none"
             >
               <option>Rush Number</option>
               <option>Name</option>
@@ -458,7 +458,7 @@ export default function HashDashboardPage() {
           <button
             type="button"
             onClick={exportHashCSV}
-            className="rounded-xl bg-[#9B1232] px-4 py-3 text-sm font-bold text-white shadow-sm"
+            className="rounded-xl bg-[#061A33] px-4 py-3 text-sm font-bold text-white shadow-sm"
           >
             Export Current View CSV
           </button>
@@ -479,7 +479,7 @@ export default function HashDashboardPage() {
               onClick={() => setSelectedFilter(filter as RusheeStatus | "All")}
               className={`rounded-full border px-4 py-2 text-xs font-bold ${
                 selectedFilter === filter
-                  ? "border-[#9B1232] bg-[#9B1232] text-white"
+                  ? "border-[#061A33] bg-[#061A33] text-white"
                   : "border-slate-300 bg-white text-[#061A33]"
               }`}
             >
@@ -573,27 +573,27 @@ export default function HashDashboardPage() {
                       </div>
 
                       <div className="mt-4 grid grid-cols-2 gap-2 text-center md:grid-cols-5">
-                        <div className="rounded-xl bg-[#F8F6F1] p-3">
+                        <div className="rounded-xl bg-[#F4F1EA] p-3">
                           <p className="font-extrabold">{communicationAvg}</p>
                           <p className="text-xs text-slate-500">Comm</p>
                         </div>
 
-                        <div className="rounded-xl bg-[#F8F6F1] p-3">
+                        <div className="rounded-xl bg-[#F4F1EA] p-3">
                           <p className="font-extrabold">{passionAvg}</p>
                           <p className="text-xs text-slate-500">Passion</p>
                         </div>
 
-                        <div className="rounded-xl bg-[#F8F6F1] p-3">
+                        <div className="rounded-xl bg-[#F4F1EA] p-3">
                           <p className="font-extrabold">{cultureFitAvg}</p>
                           <p className="text-xs text-slate-500">Culture</p>
                         </div>
 
-                        <div className="rounded-xl bg-[#F8F6F1] p-3">
+                        <div className="rounded-xl bg-[#F4F1EA] p-3">
                           <p className="font-extrabold">{fitAddAvg}</p>
                           <p className="text-xs text-slate-500">Fit/Add</p>
                         </div>
 
-                        <div className="rounded-xl bg-[#F8F6F1] p-3">
+                        <div className="rounded-xl bg-[#F4F1EA] p-3">
                           <p className="font-extrabold">
                             {rusheeFeedback.length}
                           </p>
@@ -602,21 +602,21 @@ export default function HashDashboardPage() {
                       </div>
 
                       <div className="mt-4 grid grid-cols-3 gap-2 text-center">
-                        <div className="rounded-xl border border-slate-200 p-3">
+                        <div className="rounded-xl border border-[#E5E0D8] p-3">
                           <p className="font-extrabold text-[#1F6B3A]">
                             {fitCount}
                           </p>
                           <p className="text-xs text-slate-500">Fit</p>
                         </div>
 
-                        <div className="rounded-xl border border-slate-200 p-3">
+                        <div className="rounded-xl border border-[#E5E0D8] p-3">
                           <p className="font-extrabold text-[#061A33]">
                             {addCount}
                           </p>
                           <p className="text-xs text-slate-500">Add</p>
                         </div>
 
-                        <div className="rounded-xl border border-slate-200 p-3">
+                        <div className="rounded-xl border border-[#E5E0D8] p-3">
                           <p className="font-extrabold text-slate-600">
                             {neitherCount}
                           </p>
@@ -625,7 +625,7 @@ export default function HashDashboardPage() {
                       </div>
 
                       {rusheeFeedback.length > 0 && (
-                        <div className="mt-4 rounded-xl border border-slate-200 p-3">
+                        <div className="mt-4 rounded-xl border border-[#E5E0D8] p-3">
                           <p className="text-xs font-bold uppercase tracking-wide text-slate-500">
                             Recent Comments
                           </p>
@@ -634,7 +634,7 @@ export default function HashDashboardPage() {
                             {rusheeFeedback.slice(0, 3).map((item) => (
                               <p
                                 key={item.id}
-                                className="rounded-lg bg-[#F8F6F1] p-2 text-sm text-slate-700"
+                                className="rounded-lg bg-[#F4F1EA] p-2 text-sm text-slate-700"
                               >
                                 {item.comment || "No comment provided."}
                               </p>

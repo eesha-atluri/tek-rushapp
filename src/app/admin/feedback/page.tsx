@@ -32,7 +32,7 @@ export default function AdminFeedbackPage() {
   }, []);
 
   return (
-    <main className="min-h-screen bg-[#F8F6F1] text-[#061A33]">
+    <main className="min-h-screen bg-[#F4F1EA] text-[#061A33]">
         <AdminNav />
       <header className="bg-[#061A33] px-6 py-5 text-white">
        
@@ -56,7 +56,7 @@ export default function AdminFeedbackPage() {
           <button
             type="button"
             onClick={() => alert("CSV export will be added next.")}
-            className="rounded-xl bg-[#9B1232] px-4 py-2 text-sm font-bold text-white"
+            className="rounded-xl bg-[#061A33] px-4 py-2 text-sm font-bold text-white"
           >
             Export CSV
           </button>
@@ -82,39 +82,39 @@ export default function AdminFeedbackPage() {
                   </p>
                 </div>
 
-                <span className="rounded-full bg-[#F8F6F1] px-3 py-1 text-xs font-bold text-[#9B1232]">
+                <span className="rounded-full bg-[#F4F1EA] px-3 py-1 text-xs font-bold text-[#061A33]">
                   {item.fitAddChoice}
                 </span>
               </div>
 
               <div className="mt-4 grid grid-cols-2 gap-2 text-center sm:grid-cols-5">
-                <div className="rounded-xl bg-[#F8F6F1] p-3">
+                <div className="rounded-xl bg-[#F4F1EA] p-3">
                   <p className="font-extrabold">{item.communication}</p>
                   <p className="text-xs text-slate-500">Communication</p>
                 </div>
 
-                <div className="rounded-xl bg-[#F8F6F1] p-3">
+                <div className="rounded-xl bg-[#F4F1EA] p-3">
                   <p className="font-extrabold">{item.passion}</p>
                   <p className="text-xs text-slate-500">Passion</p>
                 </div>
 
-                <div className="rounded-xl bg-[#F8F6F1] p-3">
+                <div className="rounded-xl bg-[#F4F1EA] p-3">
                   <p className="font-extrabold">{item.cultureFit}</p>
                   <p className="text-xs text-slate-500">Culture Fit</p>
                 </div>
 
-                <div className="rounded-xl bg-[#F8F6F1] p-3">
+                <div className="rounded-xl bg-[#F4F1EA] p-3">
                   <p className="font-extrabold">{item.fitAddChoice}</p>
                   <p className="text-xs text-slate-500">Fit/Add</p>
                 </div>
 
-                <div className="rounded-xl bg-[#F8F6F1] p-3">
+                <div className="rounded-xl bg-[#F4F1EA] p-3">
                   <p className="font-extrabold">{item.fitAddScore}</p>
                   <p className="text-xs text-slate-500">Fit/Add Score</p>
                 </div>
               </div>
 
-              <div className="mt-4 rounded-xl border border-slate-200 p-3">
+              <div className="mt-4 rounded-xl border border-[#E5E0D8] p-3">
                 <p className="text-xs font-bold uppercase tracking-wide text-slate-500">
                   Comment
                 </p>
@@ -127,7 +127,7 @@ export default function AdminFeedbackPage() {
               <div className="mt-4 flex gap-2">
                 <a
                   href={`/rushees/${item.rusheeId}`}
-                  className="rounded-full border border-[#9B1232] px-3 py-1 text-xs font-bold text-[#9B1232]"
+                  className="rounded-full border border-[#061A33] px-3 py-1 text-xs font-bold text-[#061A33]"
                 >
                   View Rushee
                 </a>

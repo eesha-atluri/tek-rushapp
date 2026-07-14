@@ -2,8 +2,9 @@
 
 import { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
-import { events, feedback, rushees } from "@/lib/mockData";
 import BrotherNav from "@/app/components/BrotherNav";
+import { events, feedback, rushees } from "@/lib/mockData";
+import { getStoredRushees } from "@/lib/rusheeStorage";
 
 type SavedFeedback = {
   id: string;
@@ -35,8 +36,8 @@ function RatingButtons({
           onClick={() => setValue(num)}
           className={`h-11 w-11 rounded-full border text-sm font-bold ${
             value === num
-              ? "border-[#9B1232] bg-[#9B1232] text-white"
-              : "border-slate-300 bg-white text-[#061A33]"
+              ? "border-[#061A33] bg-[#061A33] text-[#F4F1EA]"
+              : "border-[#061A33] bg-white text-[#061A33] hover:bg-[#F4F1EA]"
           }`}
         >
           {num}
@@ -51,7 +52,8 @@ export default function FeedbackPage() {
   const params = useParams();
   const id = params.id as string;
 
-  const rushee = rushees.find((item) => item.id === id);
+  const storedRushees = getStoredRushees();
+  const rushee = storedRushees.find((item) => item.id === id);
 
   const [existingFeedback, setExistingFeedback] =
     useState<SavedFeedback | null>(null);
@@ -83,21 +85,34 @@ export default function FeedbackPage() {
       setFitAddChoice(foundFeedback.fitAddChoice);
       setFitAddScore(foundFeedback.fitAddScore);
       setComment(foundFeedback.comment);
+    } else {
+      setExistingFeedback(null);
+      setSelectedEvents([]);
+      setCommunication(0);
+      setPassion(0);
+      setCultureFit(0);
+      setFitAddChoice("");
+      setFitAddScore(0);
+      setComment("");
     }
   }, [id]);
 
   if (!rushee) {
     return (
-      <main className="min-h-screen bg-[#F8F6F1] p-6 text-[#061A33]">
-        <p>Rushee not found.</p>
+      <main className="min-h-screen bg-[#F4F1EA] text-[#061A33]">
+        <BrotherNav />
 
-        <a href="/rushees" className="mt-4 block text-[#9B1232]">
-          Back to rushees
-        </a>
+        <section className="p-6">
+          <p>Rushee not found.</p>
+
+          <a href="/rush-board" className="mt-4 block font-bold text-[#061A33]">
+            Back to Rush Board
+          </a>
+        </section>
       </main>
     );
   }
-  const currentRushee = rushee;
+
   const isEditingExistingFeedback = Boolean(existingFeedback);
 
   function toggleEvent(eventName: string) {
@@ -108,7 +123,21 @@ export default function FeedbackPage() {
     }
   }
 
-  function saveFeedback() {
+  function saveFeedbackAndNext() {
+    saveFeedback("next");
+  }
+
+  function saveFeedbackAndReturn() {
+    saveFeedback("board");
+  }
+
+  function saveFeedback(destination: "next" | "board") {
+    const currentRushee = rushee;
+
+    if (!currentRushee) {
+      return;
+    }
+
     const finalFitAddScore = fitAddChoice === "Neither" ? 0 : fitAddScore;
 
     const newFeedback: SavedFeedback = {
@@ -144,29 +173,44 @@ export default function FeedbackPage() {
     localStorage.setItem("tek-feedback", JSON.stringify(updatedFeedback));
     setExistingFeedback(newFeedback);
 
-    router.push(`/rushees/${currentRushee.id}`);
+    if (destination === "board") {
+      router.push("/rush-board");
+      return;
+    }
+
+    const nextUnvotedRushee = getStoredRushees().find((item) => {
+      const alreadyHasFeedback = updatedFeedback.some(
+        (feedbackItem) => feedbackItem.rusheeId === item.id
+      );
+
+      return !alreadyHasFeedback && item.id !== currentRushee.id;
+    });
+
+    if (nextUnvotedRushee) {
+      router.push(`/feedback/${nextUnvotedRushee.id}`);
+    } else {
+      router.push("/rush-board");
+    }
   }
 
   return (
-    <main className="min-h-screen bg-[#F8F6F1] pb-20 text-[#061A33]">
-        <BrotherNav />
-      <header className="bg-[#061A33] px-5 py-4 text-white">
-        <a
-          href={`/rushees/${rushee.id}`}
-          className="text-sm font-semibold text-[#C49A45]"
-        >
-          ← Back to Profile
-        </a>
+    <main className="min-h-screen bg-[#F4F1EA] pb-20 text-[#061A33]">
+      <BrotherNav />
 
-        <h1 className="mt-2 text-xl font-extrabold">
+      <header className="bg-[#061A33] px-5 py-5 text-white">
+        <p className="text-xs uppercase tracking-[0.25em] text-[#C49A45]">
+          Brother View
+        </p>
+
+        <h1 className="mt-1 text-2xl font-extrabold">
           {isEditingExistingFeedback ? "Edit Feedback" : "Submit Feedback"}
         </h1>
 
-        {isEditingExistingFeedback && (
-          <p className="mt-2 text-sm text-slate-300">
-            Your previous feedback is loaded below. Make changes and update it.
-          </p>
-        )}
+        <p className="mt-2 text-sm text-white/70">
+          {isEditingExistingFeedback
+            ? "Your previous feedback is loaded below. Update it and continue."
+            : "Submit feedback, then move quickly to the next rushee."}
+        </p>
       </header>
 
       <form className="mx-auto max-w-md space-y-4 px-4 py-5">
@@ -179,9 +223,12 @@ export default function FeedbackPage() {
             />
 
             <div>
-              <h2 className="text-lg font-bold">{rushee.name}</h2>
+              <h2 className="text-lg font-bold">
+                #{rushee.number} {rushee.name}
+              </h2>
+
               <p className="text-xs text-slate-500">
-                #{rushee.number} · {rushee.major} · {rushee.year}
+                {rushee.major || "No major"} · {rushee.year || "No year"}
               </p>
             </div>
           </div>
@@ -189,6 +236,7 @@ export default function FeedbackPage() {
 
         <section className="rounded-2xl bg-white p-4 shadow-sm">
           <p className="font-bold">Which events did you talk to them at?</p>
+
           <p className="text-sm text-slate-500">
             Select all events where you interacted with this rushee.
           </p>
@@ -204,8 +252,8 @@ export default function FeedbackPage() {
                   onClick={() => toggleEvent(event)}
                   className={`rounded-full border px-3 py-2 text-xs font-semibold ${
                     isSelected
-                      ? "border-[#9B1232] bg-[#9B1232] text-white"
-                      : "border-slate-300 bg-white"
+                      ? "border-[#061A33] bg-[#061A33] text-[#F4F1EA]"
+                      : "border-[#061A33] bg-white text-[#061A33] hover:bg-[#F4F1EA]"
                   }`}
                 >
                   {isSelected ? "✓ " : ""}
@@ -218,10 +266,7 @@ export default function FeedbackPage() {
 
         <section className="rounded-2xl bg-white p-4 shadow-sm">
           <p className="font-bold">1. Communication</p>
-          <p className="text-sm text-slate-500">
-            Can they hold a conversation?
-          </p>
-
+          <p className="text-sm text-slate-500">Can they hold a conversation?</p>
           <RatingButtons value={communication} setValue={setCommunication} />
         </section>
 
@@ -230,7 +275,6 @@ export default function FeedbackPage() {
           <p className="text-sm text-slate-500">
             Do they genuinely seem interested in TEK?
           </p>
-
           <RatingButtons value={passion} setValue={setPassion} />
         </section>
 
@@ -239,12 +283,12 @@ export default function FeedbackPage() {
           <p className="text-sm text-slate-500">
             Do you see them vibing with TEK?
           </p>
-
           <RatingButtons value={cultureFit} setValue={setCultureFit} />
         </section>
 
         <section className="rounded-2xl bg-white p-4 shadow-sm">
           <p className="font-bold">4. Fit, Add, or Neither</p>
+
           <p className="text-sm text-slate-500">
             Choose the strongest category for this rushee.
           </p>
@@ -263,8 +307,8 @@ export default function FeedbackPage() {
                 }}
                 className={`rounded-xl border px-3 py-3 text-sm font-bold ${
                   fitAddChoice === choice
-                    ? "border-[#9B1232] bg-[#9B1232] text-white"
-                    : "border-slate-300 bg-white"
+                    ? "border-[#061A33] bg-[#061A33] text-[#F4F1EA]"
+                    : "border-[#061A33] bg-white text-[#061A33] hover:bg-[#F4F1EA]"
                 }`}
               >
                 {choice}
@@ -276,6 +320,7 @@ export default function FeedbackPage() {
         {fitAddChoice !== "" && fitAddChoice !== "Neither" && (
           <section className="rounded-2xl bg-white p-4 shadow-sm">
             <p className="font-bold">5. {fitAddChoice} Score</p>
+
             <p className="text-sm text-slate-500">
               Rate how strongly they are a {fitAddChoice.toLowerCase()}.
             </p>
@@ -287,11 +332,12 @@ export default function FeedbackPage() {
         {fitAddChoice === "Neither" && (
           <section className="rounded-2xl bg-white p-4 shadow-sm">
             <p className="font-bold">5. Fit/Add Score</p>
+
             <p className="text-sm text-slate-500">
               Auto-set to 0 because Neither was selected.
             </p>
 
-            <div className="mt-3 rounded-xl bg-slate-100 p-4 text-center text-2xl font-extrabold text-slate-500">
+            <div className="mt-3 rounded-xl bg-[#F4F1EA] p-4 text-center text-2xl font-extrabold text-slate-500">
               0
             </div>
           </section>
@@ -299,6 +345,7 @@ export default function FeedbackPage() {
 
         <section className="rounded-2xl bg-white p-4 shadow-sm">
           <p className="font-bold">Comment</p>
+
           <p className="text-sm text-slate-500">
             Add any notes from your interaction.
           </p>
@@ -307,37 +354,28 @@ export default function FeedbackPage() {
             value={comment}
             onChange={(event) => setComment(event.target.value)}
             placeholder="Write notes here..."
-            className="mt-3 min-h-28 w-full rounded-xl border border-slate-300 p-3 text-sm outline-none"
+            className="mt-3 min-h-28 w-full rounded-xl border border-[#E5E0D8] p-3 text-sm outline-none"
           />
         </section>
 
-        <button
-          type="button"
-          onClick={saveFeedback}
-          className="w-full rounded-xl bg-[#9B1232] px-4 py-4 font-bold text-white shadow-lg"
-        >
-          {isEditingExistingFeedback ? "Update Feedback" : "Submit Feedback"}
-        </button>
+        <div className="space-y-3">
+          <button
+            type="button"
+            onClick={saveFeedbackAndNext}
+            className="w-full rounded-xl bg-[#061A33] px-4 py-4 font-bold text-[#F4F1EA] shadow-lg"
+          >
+            {isEditingExistingFeedback ? "Update & Next" : "Save & Next"}
+          </button>
+
+          <button
+            type="button"
+            onClick={saveFeedbackAndReturn}
+            className="w-full rounded-xl border border-[#061A33] bg-white px-4 py-4 font-bold text-[#061A33]"
+          >
+            Save & Return to Board
+          </button>
+        </div>
       </form>
     </main>
   );
 }
-<div className="flex gap-2">
-  <a
-    href="/admin/rushees"
-    className="rounded-xl bg-[#9B1232] px-4 py-2 text-sm font-bold text-white"
-  >
-    Add / Edit Rushees
-  </a>
-
-  <a
-    href="/admin/events"
-    className="rounded-xl border border-[#C49A45] px-4 py-2 text-sm font-bold text-[#061A33]"
-  >
-    Manage Events
-  </a>
-
-  <button className="rounded-xl border border-[#061A33] px-4 py-2 text-sm font-bold text-[#061A33]">
-    Export CSV
-  </button>
-</div>

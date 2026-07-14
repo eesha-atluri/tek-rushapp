@@ -110,7 +110,7 @@ export default function RushBoardPage() {
   const needVoteCount = rusheeList.length - votedCount;
 
   return (
-    <main className="min-h-screen bg-[#F8F6F1] pb-20 text-[#061A33]">
+    <main className="min-h-screen bg-[#F4F1EA] pb-20 text-[#061A33]">
         <BrotherNav />
       <header className="bg-[#061A33] px-5 py-5 text-white">
        
@@ -141,7 +141,7 @@ export default function RushBoardPage() {
           </div>
 
           <div className="rounded-2xl bg-white p-3 shadow-sm">
-            <p className="text-xl font-extrabold text-[#9B1232]">
+            <p className="text-xl font-extrabold text-[#061A33]">
               {needVoteCount}
             </p>
             <p className="text-xs text-slate-500">Need Vote</p>
@@ -152,7 +152,7 @@ export default function RushBoardPage() {
           value={search}
           onChange={(event) => setSearch(event.target.value)}
           placeholder="Search by name, number, major..."
-          className="mb-4 w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm shadow-sm outline-none"
+          className="mb-4 w-full rounded-xl border border-[#E5E0D8] bg-white px-4 py-3 text-sm shadow-sm outline-none"
         />
 
         <div className="mb-4 flex gap-2 overflow-x-auto">
@@ -168,7 +168,7 @@ export default function RushBoardPage() {
               onClick={() => setSelectedFilter(filter as FilterType)}
               className={`whitespace-nowrap rounded-full border px-4 py-2 text-xs font-bold ${
                 selectedFilter === filter
-                  ? "border-[#9B1232] bg-[#9B1232] text-white"
+                  ? "border-[#061A33] bg-[#061A33] text-white"
                   : "border-slate-300 bg-white text-[#061A33]"
               }`}
             >
@@ -214,7 +214,7 @@ export default function RushBoardPage() {
             return (
               <div
                 key={rushee.id}
-                className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm"
+                className="rounded-2xl border border-[#E5E0D8] bg-white p-4 shadow-sm"
               >
                 <div className="flex gap-4">
                   <img
@@ -254,7 +254,7 @@ export default function RushBoardPage() {
                           className={`text-xs font-bold ${
                             hasMyFeedback
                               ? "text-green-700"
-                              : "text-[#9B1232]"
+                              : "text-[#061A33]"
                           }`}
                         >
                           My Vote:{" "}
@@ -278,8 +278,8 @@ export default function RushBoardPage() {
                           href={`/feedback/${rushee.id}`}
                           className={`rounded-full px-3 py-1 text-xs font-bold ${
                             hasMyFeedback
-                              ? "border border-[#9B1232] text-[#9B1232]"
-                              : "bg-[#9B1232] text-white"
+                              ? "border border-[#061A33] text-[#061A33]"
+                              : "bg-[#061A33] text-white"
                           }`}
                         >
                           {hasMyFeedback ? "Edit Vote" : "Vote"}

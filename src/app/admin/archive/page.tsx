@@ -73,7 +73,7 @@ export default function AdminArchivePage() {
   );
 
   return (
-    <main className="min-h-screen bg-[#F8F6F1] text-[#061A33]">
+    <main className="min-h-screen bg-[#F4F1EA] text-[#061A33]">
         <AdminNav />
       <header className="bg-[#061A33] px-6 py-5 text-white">
        
@@ -155,22 +155,22 @@ export default function AdminArchivePage() {
                     </p>
 
                     <div className="mt-4 grid grid-cols-4 gap-2 text-center">
-                      <div className="rounded-xl bg-[#F8F6F1] p-3">
+                      <div className="rounded-xl bg-[#F4F1EA] p-3">
                         <p className="font-extrabold">{rusheeFeedback.length}</p>
                         <p className="text-xs text-slate-500">Reviews</p>
                       </div>
 
-                      <div className="rounded-xl bg-[#F8F6F1] p-3">
+                      <div className="rounded-xl bg-[#F4F1EA] p-3">
                         <p className="font-extrabold">{communicationAvg}</p>
                         <p className="text-xs text-slate-500">Comm</p>
                       </div>
 
-                      <div className="rounded-xl bg-[#F8F6F1] p-3">
+                      <div className="rounded-xl bg-[#F4F1EA] p-3">
                         <p className="font-extrabold">{passionAvg}</p>
                         <p className="text-xs text-slate-500">Passion</p>
                       </div>
 
-                      <div className="rounded-xl bg-[#F8F6F1] p-3">
+                      <div className="rounded-xl bg-[#F4F1EA] p-3">
                         <p className="font-extrabold">{cultureFitAvg}</p>
                         <p className="text-xs text-slate-500">Culture</p>
                       </div>
@@ -186,7 +186,7 @@ export default function AdminArchivePage() {
 
                       <button
                         onClick={() => unarchiveRushee(rushee.id)}
-                        className="rounded-full bg-[#9B1232] px-3 py-1 text-xs font-bold text-white"
+                        className="rounded-full bg-[#061A33] px-3 py-1 text-xs font-bold text-white"
                       >
                         Restore to Active Rush
                       </button>

@@ -3,7 +3,7 @@ import BrotherNav from "@/app/components/BrotherNav";
 
 export default function RusheesPage() {
   return (
-    <main className="min-h-screen bg-[#F8F6F1] pb-20 text-[#061A33]">
+    <main className="min-h-screen bg-[#F4F1EA] pb-20 text-[#061A33]">
         <BrotherNav />
       <header className="bg-[#061A33] px-5 py-5 text-white">
         <p className="text-xs uppercase tracking-[0.25em] text-[#C49A45]">
@@ -15,7 +15,7 @@ export default function RusheesPage() {
       <section className="mx-auto max-w-md px-4 py-5">
         <input
           placeholder="Search by name, number, major..."
-          className="mb-4 w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm shadow-sm outline-none"
+          className="mb-4 w-full rounded-xl border border-[#E5E0D8] bg-white px-4 py-3 text-sm shadow-sm outline-none"
         />
 
         <div className="mb-4 flex gap-2 overflow-x-auto">
@@ -36,7 +36,7 @@ export default function RusheesPage() {
             <a
               key={rushee.id}
               href={`/rushees/${rushee.id}`}
-              className="block rounded-2xl border border-slate-200 bg-white p-4 shadow-sm"
+              className="block rounded-2xl border border-[#E5E0D8] bg-white p-4 shadow-sm"
             >
               <div className="flex gap-4">
                 <img
@@ -54,14 +54,14 @@ export default function RusheesPage() {
                       </p>
                     </div>
 
-                    <span className="text-xl text-[#9B1232]">›</span>
+                    <span className="text-xl text-[#061A33]">›</span>
                   </div>
 
                   <p className="mt-2 text-xs text-slate-600">
                     Events: {rushee.events.join(", ")}
                   </p>
 
-                  <p className="mt-1 text-xs font-semibold text-[#9B1232]">
+                  <p className="mt-1 text-xs font-semibold text-[#061A33]">
                     Reviews: {rushee.reviews} brothers
                   </p>
                 </div>

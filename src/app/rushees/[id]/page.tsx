@@ -44,10 +44,10 @@ export default function RusheeProfilePage() {
 
   if (!rushee) {
     return (
-      <main className="min-h-screen bg-[#F8F6F1] p-6 text-[#061A33]">
+      <main className="min-h-screen bg-[#F4F1EA] p-6 text-[#061A33]">
         <p>Rushee not found.</p>
 
-        <a href="/rushees" className="mt-4 block font-bold text-[#9B1232]">
+        <a href="/rushees" className="mt-4 block font-bold text-[#061A33]">
           Back to Rushees
         </a>
       </main>
@@ -61,7 +61,7 @@ export default function RusheeProfilePage() {
   const hasMyFeedback = rusheeFeedback.length > 0;
 
   return (
-    <main className="min-h-screen bg-[#F8F6F1] pb-20 text-[#061A33]">
+    <main className="min-h-screen bg-[#F4F1EA] pb-20 text-[#061A33]">
         <BrotherNav />
       <header className="bg-[#061A33] px-5 py-4 text-white">
         <a href="/rush-board" className="text-sm font-semibold text-[#C49A45]">
@@ -102,7 +102,7 @@ export default function RusheeProfilePage() {
                   rushee.events.map((event) => (
                     <span
                       key={event}
-                      className="rounded-full border border-[#C49A45]/40 bg-[#F8F6F1] px-3 py-1 text-xs font-semibold"
+                      className="rounded-full border border-[#C49A45]/40 bg-[#F4F1EA] px-3 py-1 text-xs font-semibold"
                     >
                       {event}
                     </span>
@@ -124,21 +124,21 @@ export default function RusheeProfilePage() {
             </div>
 
             <div className="mt-5 grid grid-cols-3 gap-2 text-center">
-              <div className="rounded-xl border border-slate-200 p-3">
+              <div className="rounded-xl border border-[#E5E0D8] p-3">
                 <p className="text-xl font-extrabold">
                   {rusheeFeedback.length}
                 </p>
                 <p className="text-xs text-slate-500">Reviews</p>
               </div>
 
-              <div className="rounded-xl border border-slate-200 p-3">
+              <div className="rounded-xl border border-[#E5E0D8] p-3">
                 <p className="text-xl font-extrabold">
                   {rushee.events.length}
                 </p>
                 <p className="text-xs text-slate-500">Events</p>
               </div>
 
-              <div className="rounded-xl border border-slate-200 p-3">
+              <div className="rounded-xl border border-[#E5E0D8] p-3">
                 <p className="text-xl font-extrabold">
                   {hasMyFeedback ? "Yes" : "No"}
                 </p>
@@ -146,7 +146,7 @@ export default function RusheeProfilePage() {
               </div>
             </div>
 
-            <div className="mt-5 rounded-2xl bg-[#F8F6F1] p-4">
+            <div className="mt-5 rounded-2xl bg-[#F4F1EA] p-4">
   <p className="text-xs font-bold uppercase tracking-wide text-slate-500">
     Review Progress
   </p>
@@ -163,14 +163,14 @@ export default function RusheeProfilePage() {
 
             <a
               href={`/feedback/${rushee.id}`}
-              className="mt-6 block rounded-xl bg-[#9B1232] px-4 py-3 text-center font-bold text-white shadow-md"
+              className="mt-6 block rounded-xl bg-[#061A33] px-4 py-3 text-center font-bold text-white shadow-md"
             >
               {hasMyFeedback ? "Edit My Feedback" : "Rank This Rushee"}
             </a>
 
             <a
               href="/my-feedback"
-              className="mt-3 block rounded-xl border border-[#9B1232] px-4 py-3 text-center font-bold text-[#9B1232]"
+              className="mt-3 block rounded-xl border border-[#061A33] px-4 py-3 text-center font-bold text-[#061A33]"
             >
               View My Feedback
             </a>
