@@ -19,17 +19,34 @@ type SavedFeedback = {
   comment: string;
 };
 
-type RusheeStatus =
-  | "Active Rush"
-  | "Needs More Feedback"
-  | "Next Round"
-  | "Maybe"
-  | "Do Not Continue"
+type HashRound = "Hash #1" | "Hash #2" | "Hash #3" | "Final Hash #4";
+
+type RusheeStage =
+  | HashRound
+  | "Bid / Accepted"
+  | "Not Continuing"
   | "Archived";
+
+type HashDecision =
+  | "Advance"
+  | "Needs More Votes"
+  | "Maybe"
+  | "Not Continuing"
+  | "Bid / Accepted"
+  | "Archive";
 
 type SearchBy = "All" | "Name" | "Rush Number" | "Major" | "Year";
 
-type SortBy = "Rush Number" | "Name" | "Review Count" | "Status";
+type SortBy = "Rush Number" | "Name" | "Review Count" | "Stage";
+
+type HashHistory = Record<string, Partial<Record<HashRound, HashDecision>>>;
+
+const hashRounds: HashRound[] = [
+  "Hash #1",
+  "Hash #2",
+  "Hash #3",
+  "Final Hash #4",
+];
 
 function getAverage(scores: number[]) {
   if (scores.length === 0) return "N/A";
@@ -38,38 +55,49 @@ function getAverage(scores: number[]) {
   return (total / scores.length).toFixed(1);
 }
 
-function getStatusStyle(status: RusheeStatus) {
-  if (status === "Active Rush") {
-    return "bg-[#EAF3EA] text-[#1F6B3A]";
+function getNextStage(currentStage: HashRound): RusheeStage {
+  if (currentStage === "Hash #1") return "Hash #2";
+  if (currentStage === "Hash #2") return "Hash #3";
+  if (currentStage === "Hash #3") return "Final Hash #4";
+  return "Bid / Accepted";
+}
+
+function getStageStyle(stage: RusheeStage) {
+  if (stage === "Hash #1") {
+    return "bg-white text-[#061A33] border border-[#E5E0D8]";
   }
 
-  if (status === "Needs More Feedback") {
-    return "bg-[#FFF6E0] text-[#8A6500]";
+  if (stage === "Hash #2") {
+    return "bg-[#EEF3F8] text-[#061A33] border border-[#E5E0D8]";
   }
 
-  if (status === "Next Round") {
-    return "bg-[#E8EEF6] text-[#061A33]";
+  if (stage === "Hash #3") {
+    return "bg-[#E8EEF6] text-[#061A33] border border-[#E5E0D8]";
   }
 
-  if (status === "Maybe") {
-    return "bg-[#F8EAF0] text-[#061A33]";
+  if (stage === "Final Hash #4") {
+    return "bg-[#FFF7E6] text-[#8A6500] border border-[#E5E0D8]";
   }
 
-  if (status === "Do Not Continue") {
-    return "bg-[#F5E5E8] text-[#061A33]";
+  if (stage === "Bid / Accepted") {
+    return "bg-[#EAF3EA] text-[#1F6B3A] border border-[#E5E0D8]";
   }
 
-  return "bg-slate-100 text-slate-700";
+  if (stage === "Not Continuing") {
+    return "bg-[#F2E8E8] text-[#061A33] border border-[#E5E0D8]";
+  }
+
+  return "bg-slate-100 text-slate-700 border border-[#E5E0D8]";
 }
 
 function getDecisionButtonStyle(
-  currentStatus: RusheeStatus,
-  buttonStatus: RusheeStatus
+  lastDecision: HashDecision | undefined,
+  buttonDecision: HashDecision
 ) {
-  const isSelected = currentStatus === buttonStatus;
+  const isSelected = lastDecision === buttonDecision;
 
   if (isSelected) {
-    return "bg-[#061A33] text-white border-[#061A33]";
+    return "bg-[#061A33] text-[#F4F1EA] border-[#061A33]";
   }
 
   return "bg-white text-[#061A33] border-[#061A33] hover:bg-[#F4F1EA]";
@@ -78,10 +106,11 @@ function getDecisionButtonStyle(
 export default function HashDashboardPage() {
   const [rusheeList, setRusheeList] = useState<Rushee[]>([]);
   const [allFeedback, setAllFeedback] = useState<SavedFeedback[]>([]);
-  const [statuses, setStatuses] = useState<Record<string, RusheeStatus>>({});
-  const [selectedFilter, setSelectedFilter] = useState<RusheeStatus | "All">(
-    "All"
-  );
+  const [stages, setStages] = useState<Record<string, RusheeStage>>({});
+  const [history, setHistory] = useState<HashHistory>({});
+
+  const [selectedHashRound, setSelectedHashRound] =
+    useState<HashRound>("Hash #1");
 
   const [search, setSearch] = useState("");
   const [searchBy, setSearchBy] = useState<SearchBy>("All");
@@ -99,65 +128,99 @@ export default function HashDashboardPage() {
 
     setAllFeedback(savedFeedback);
 
-    const savedStatusesString = localStorage.getItem("tek-rushee-statuses");
+    const savedStagesString = localStorage.getItem("tek-rushee-stages");
 
-    if (savedStatusesString) {
-      setStatuses(JSON.parse(savedStatusesString));
+    if (savedStagesString) {
+      setStages(JSON.parse(savedStagesString));
     } else {
-      const defaultStatuses: Record<string, RusheeStatus> = {};
+      const defaultStages: Record<string, RusheeStage> = {};
 
       storedRushees.forEach((rushee) => {
-        defaultStatuses[rushee.id] = "Active Rush";
+        defaultStages[rushee.id] = "Hash #1";
       });
 
-      setStatuses(defaultStatuses);
+      setStages(defaultStages);
+      localStorage.setItem("tek-rushee-stages", JSON.stringify(defaultStages));
+    }
 
-      localStorage.setItem(
-        "tek-rushee-statuses",
-        JSON.stringify(defaultStatuses)
-      );
+    const savedHistoryString = localStorage.getItem("tek-hash-history");
+
+    if (savedHistoryString) {
+      setHistory(JSON.parse(savedHistoryString));
     }
   }, []);
 
-  function updateStatus(rusheeId: string, newStatus: RusheeStatus) {
-    const updatedStatuses = {
-      ...statuses,
-      [rusheeId]: newStatus,
+  function updateDecision(rusheeId: string, decision: HashDecision) {
+    const currentStage = stages[rusheeId] || selectedHashRound;
+
+    let nextStage: RusheeStage = currentStage;
+
+    if (decision === "Advance") {
+      nextStage = getNextStage(selectedHashRound);
+    }
+
+    if (decision === "Needs More Votes") {
+      nextStage = selectedHashRound;
+    }
+
+    if (decision === "Maybe") {
+      nextStage = selectedHashRound;
+    }
+
+    if (decision === "Not Continuing") {
+      nextStage = "Not Continuing";
+    }
+
+    if (decision === "Bid / Accepted") {
+      nextStage = "Bid / Accepted";
+    }
+
+    if (decision === "Archive") {
+      nextStage = "Archived";
+    }
+
+    const updatedStages = {
+      ...stages,
+      [rusheeId]: nextStage,
     };
 
-    setStatuses(updatedStatuses);
+    const updatedHistory: HashHistory = {
+      ...history,
+      [rusheeId]: {
+        ...(history[rusheeId] || {}),
+        [selectedHashRound]: decision,
+      },
+    };
 
-    localStorage.setItem(
-      "tek-rushee-statuses",
-      JSON.stringify(updatedStatuses)
-    );
+    setStages(updatedStages);
+    setHistory(updatedHistory);
+
+    localStorage.setItem("tek-rushee-stages", JSON.stringify(updatedStages));
+    localStorage.setItem("tek-hash-history", JSON.stringify(updatedHistory));
   }
 
-  const statusCounts = {
-    all: rusheeList.length,
-    active: Object.values(statuses).filter(
-      (status) => status === "Active Rush"
-    ).length,
-    needs: Object.values(statuses).filter(
-      (status) => status === "Needs More Feedback"
-    ).length,
-    next: Object.values(statuses).filter((status) => status === "Next Round")
+  const stageCounts = {
+    hash1: Object.values(stages).filter((stage) => stage === "Hash #1").length,
+    hash2: Object.values(stages).filter((stage) => stage === "Hash #2").length,
+    hash3: Object.values(stages).filter((stage) => stage === "Hash #3").length,
+    final: Object.values(stages).filter((stage) => stage === "Final Hash #4")
       .length,
-    maybe: Object.values(statuses).filter((status) => status === "Maybe")
+    bid: Object.values(stages).filter((stage) => stage === "Bid / Accepted")
       .length,
-    notContinue: Object.values(statuses).filter(
-      (status) => status === "Do Not Continue"
+    notContinuing: Object.values(stages).filter(
+      (stage) => stage === "Not Continuing"
     ).length,
-    archived: Object.values(statuses).filter((status) => status === "Archived")
+    archived: Object.values(stages).filter((stage) => stage === "Archived")
       .length,
   };
 
   const filteredRushees = rusheeList
     .filter((rushee) => {
-      const currentStatus = statuses[rushee.id] || "Active Rush";
+      const currentStage = stages[rushee.id] || "Hash #1";
 
-      const matchesFilter =
-        selectedFilter === "All" || currentStatus === selectedFilter;
+      if (currentStage !== selectedHashRound) {
+        return false;
+      }
 
       const query = search.toLowerCase();
 
@@ -189,7 +252,7 @@ export default function HashDashboardPage() {
         }
       }
 
-      return matchesFilter && matchesSearch;
+      return matchesSearch;
     })
     .sort((a, b) => {
       if (sortBy === "Rush Number") {
@@ -212,11 +275,11 @@ export default function HashDashboardPage() {
         return bReviews - aReviews;
       }
 
-      if (sortBy === "Status") {
-        const aStatus = statuses[a.id] || "Active Rush";
-        const bStatus = statuses[b.id] || "Active Rush";
+      if (sortBy === "Stage") {
+        const aStage = stages[a.id] || "Hash #1";
+        const bStage = stages[b.id] || "Hash #1";
 
-        return aStatus.localeCompare(bStatus);
+        return aStage.localeCompare(bStage);
       }
 
       return 0;
@@ -266,7 +329,8 @@ export default function HashDashboardPage() {
         name: rushee.name,
         major: rushee.major,
         year: rushee.year,
-        status: statuses[rushee.id] || "Active Rush",
+        currentStage: stages[rushee.id] || "Hash #1",
+        hashDecision: history[rushee.id]?.[selectedHashRound] || "",
         events: rushee.events.join(", "),
         reviewCount: rusheeFeedback.length,
         communicationAvg,
@@ -285,7 +349,8 @@ export default function HashDashboardPage() {
       "Name",
       "Major",
       "Year",
-      "Status",
+      "Current Stage",
+      "Current Hash Decision",
       "Events",
       "Review Count",
       "Communication Avg",
@@ -306,7 +371,8 @@ export default function HashDashboardPage() {
           row.name,
           row.major,
           row.year,
-          row.status,
+          row.currentStage,
+          row.hashDecision,
           row.events,
           row.reviewCount,
           row.communicationAvg,
@@ -329,7 +395,9 @@ export default function HashDashboardPage() {
 
     const link = document.createElement("a");
     link.href = url;
-    link.download = "tek-hash-dashboard.csv";
+    link.download = `${selectedHashRound
+      .toLowerCase()
+      .replaceAll(" ", "-")}-decisions.csv`;
     link.click();
 
     URL.revokeObjectURL(url);
@@ -344,73 +412,82 @@ export default function HashDashboardPage() {
           Admin
         </p>
 
-        <h1 className="mt-1 text-2xl font-extrabold">Hash Dashboard</h1>
+        <h1 className="mt-1 text-2xl font-extrabold">Rush Decisions</h1>
 
-        <p className="mt-2 text-sm text-slate-300">
-          Review feedback, filter rushees, and move them through the rush
-          process.
+        <p className="mt-2 text-sm text-white/70">
+          Move rushees through each hash round while keeping decision history.
         </p>
       </header>
 
       <section className="mx-auto max-w-7xl px-4 py-6">
-        <div className="grid grid-cols-2 gap-3 md:grid-cols-6">
+        <div className="grid grid-cols-2 gap-3 md:grid-cols-7">
           <button
-            onClick={() => setSelectedFilter("All")}
+            onClick={() => setSelectedHashRound("Hash #1")}
             className="rounded-2xl bg-white p-4 text-left shadow-sm"
           >
-            <p className="text-sm text-slate-500">All Rushees</p>
-            <p className="text-3xl font-extrabold">{statusCounts.all}</p>
+            <p className="text-sm text-slate-500">Hash #1</p>
+            <p className="text-3xl font-extrabold">{stageCounts.hash1}</p>
           </button>
 
           <button
-            onClick={() => setSelectedFilter("Active Rush")}
+            onClick={() => setSelectedHashRound("Hash #2")}
             className="rounded-2xl bg-white p-4 text-left shadow-sm"
           >
-            <p className="text-sm text-slate-500">Active Rush</p>
+            <p className="text-sm text-slate-500">Hash #2</p>
+            <p className="text-3xl font-extrabold">{stageCounts.hash2}</p>
+          </button>
+
+          <button
+            onClick={() => setSelectedHashRound("Hash #3")}
+            className="rounded-2xl bg-white p-4 text-left shadow-sm"
+          >
+            <p className="text-sm text-slate-500">Hash #3</p>
+            <p className="text-3xl font-extrabold">{stageCounts.hash3}</p>
+          </button>
+
+          <button
+            onClick={() => setSelectedHashRound("Final Hash #4")}
+            className="rounded-2xl bg-white p-4 text-left shadow-sm"
+          >
+            <p className="text-sm text-slate-500">Final Hash</p>
+            <p className="text-3xl font-extrabold">{stageCounts.final}</p>
+          </button>
+
+          <div className="rounded-2xl bg-white p-4 text-left shadow-sm">
+            <p className="text-sm text-slate-500">Bid / Accepted</p>
             <p className="text-3xl font-extrabold text-[#1F6B3A]">
-              {statusCounts.active}
+              {stageCounts.bid}
             </p>
-          </button>
+          </div>
 
-          <button
-            onClick={() => setSelectedFilter("Needs More Feedback")}
-            className="rounded-2xl bg-white p-4 text-left shadow-sm"
-          >
-            <p className="text-sm text-slate-500">Needs Feedback</p>
-            <p className="text-3xl font-extrabold text-[#8A6500]">
-              {statusCounts.needs}
+          <div className="rounded-2xl bg-white p-4 text-left shadow-sm">
+            <p className="text-sm text-slate-500">Not Continuing</p>
+            <p className="text-3xl font-extrabold">
+              {stageCounts.notContinuing}
             </p>
-          </button>
+          </div>
 
-          <button
-            onClick={() => setSelectedFilter("Next Round")}
-            className="rounded-2xl bg-white p-4 text-left shadow-sm"
-          >
-            <p className="text-sm text-slate-500">Next Round</p>
-            <p className="text-3xl font-extrabold text-[#061A33]">
-              {statusCounts.next}
-            </p>
-          </button>
-
-          <button
-            onClick={() => setSelectedFilter("Maybe")}
-            className="rounded-2xl bg-white p-4 text-left shadow-sm"
-          >
-            <p className="text-sm text-slate-500">Maybe</p>
-            <p className="text-3xl font-extrabold text-[#061A33]">
-              {statusCounts.maybe}
-            </p>
-          </button>
-
-          <button
-            onClick={() => setSelectedFilter("Archived")}
-            className="rounded-2xl bg-white p-4 text-left shadow-sm"
-          >
+          <div className="rounded-2xl bg-white p-4 text-left shadow-sm">
             <p className="text-sm text-slate-500">Archived</p>
-            <p className="text-3xl font-extrabold text-slate-700">
-              {statusCounts.archived}
-            </p>
-          </button>
+            <p className="text-3xl font-extrabold">{stageCounts.archived}</p>
+          </div>
+        </div>
+
+        <div className="mt-6 rounded-2xl bg-white p-4 shadow-sm">
+          <label className="text-sm font-bold">
+            Current Hash Round
+            <select
+              value={selectedHashRound}
+              onChange={(event) =>
+                setSelectedHashRound(event.target.value as HashRound)
+              }
+              className="mt-2 w-full rounded-xl border border-[#E5E0D8] bg-white px-4 py-3 text-sm font-normal outline-none"
+            >
+              {hashRounds.map((round) => (
+                <option key={round}>{round}</option>
+              ))}
+            </select>
+          </label>
         </div>
 
         <div className="mt-6 grid gap-3 md:grid-cols-3">
@@ -449,7 +526,7 @@ export default function HashDashboardPage() {
               <option>Rush Number</option>
               <option>Name</option>
               <option>Review Count</option>
-              <option>Status</option>
+              <option>Stage</option>
             </select>
           </label>
         </div>
@@ -458,40 +535,16 @@ export default function HashDashboardPage() {
           <button
             type="button"
             onClick={exportHashCSV}
-            className="rounded-xl bg-[#061A33] px-4 py-3 text-sm font-bold text-white shadow-sm"
+            className="rounded-xl bg-[#061A33] px-4 py-3 text-sm font-bold text-[#F4F1EA] shadow-sm"
           >
-            Export Current View CSV
+            Export Current Hash CSV
           </button>
-        </div>
-
-        <div className="mt-6 flex flex-wrap gap-2">
-          {[
-            "All",
-            "Active Rush",
-            "Needs More Feedback",
-            "Next Round",
-            "Maybe",
-            "Do Not Continue",
-            "Archived",
-          ].map((filter) => (
-            <button
-              key={filter}
-              onClick={() => setSelectedFilter(filter as RusheeStatus | "All")}
-              className={`rounded-full border px-4 py-2 text-xs font-bold ${
-                selectedFilter === filter
-                  ? "border-[#061A33] bg-[#061A33] text-white"
-                  : "border-slate-300 bg-white text-[#061A33]"
-              }`}
-            >
-              {filter}
-            </button>
-          ))}
         </div>
 
         <div className="mt-6 space-y-4">
           {filteredRushees.length === 0 && (
             <div className="rounded-2xl bg-white p-5 text-sm text-slate-600 shadow-sm">
-              No rushees match this search or filter.
+              No rushees are currently in {selectedHashRound}.
             </div>
           )}
 
@@ -528,7 +581,8 @@ export default function HashDashboardPage() {
               (item) => item.fitAddChoice === "Neither"
             ).length;
 
-            const currentStatus = statuses[rushee.id] || "Active Rush";
+            const currentStage = stages[rushee.id] || "Hash #1";
+            const lastDecision = history[rushee.id]?.[selectedHashRound];
 
             return (
               <div
@@ -564,11 +618,11 @@ export default function HashDashboardPage() {
                         </div>
 
                         <span
-                          className={`w-fit rounded-full px-3 py-1 text-xs font-bold ${getStatusStyle(
-                            currentStatus
+                          className={`w-fit rounded-full px-3 py-1 text-xs font-bold ${getStageStyle(
+                            currentStage
                           )}`}
                         >
-                          {currentStatus}
+                          {currentStage}
                         </span>
                       </div>
 
@@ -642,43 +696,84 @@ export default function HashDashboardPage() {
                           </div>
                         </div>
                       )}
+
+                      {history[rushee.id] && (
+                        <div className="mt-4 rounded-xl border border-[#E5E0D8] p-3">
+                          <p className="text-xs font-bold uppercase tracking-wide text-slate-500">
+                            Decision History
+                          </p>
+
+                          <div className="mt-2 flex flex-wrap gap-2">
+                            {hashRounds.map((round) => {
+                              const decision = history[rushee.id]?.[round];
+
+                              if (!decision) return null;
+
+                              return (
+                                <span
+                                  key={round}
+                                  className="rounded-full bg-[#F4F1EA] px-3 py-1 text-xs font-bold"
+                                >
+                                  {round}: {decision}
+                                </span>
+                              );
+                            })}
+                          </div>
+                        </div>
+                      )}
                     </div>
                   </div>
 
                   <div className="w-full space-y-2 lg:w-56">
-                   <a
-                    href={`/admin/rushees/${rushee.id}`}
-                    className="block rounded-xl border border-[#061A33] px-4 py-2 text-center text-sm font-bold text-[#061A33]"
+                    <a
+                      href={`/admin/rushees/${rushee.id}`}
+                      className="block rounded-xl border border-[#061A33] px-4 py-2 text-center text-sm font-bold text-[#061A33]"
                     >
-                    Admin Profile
+                      Admin Profile
                     </a>
 
-                    <button
-                      onClick={() => updateStatus(rushee.id, "Next Round")}
-                      className={`w-full rounded-xl border px-4 py-2 text-sm font-bold transition ${getDecisionButtonStyle(
-                        currentStatus,
-                        "Next Round"
-                      )}`}
-                    >
-                      Move to Next Round
-                    </button>
+                    {selectedHashRound !== "Final Hash #4" && (
+                      <button
+                        onClick={() => updateDecision(rushee.id, "Advance")}
+                        className={`w-full rounded-xl border px-4 py-2 text-sm font-bold transition ${getDecisionButtonStyle(
+                          lastDecision,
+                          "Advance"
+                        )}`}
+                      >
+                        Advance
+                      </button>
+                    )}
+
+                    {selectedHashRound === "Final Hash #4" && (
+                      <button
+                        onClick={() =>
+                          updateDecision(rushee.id, "Bid / Accepted")
+                        }
+                        className={`w-full rounded-xl border px-4 py-2 text-sm font-bold transition ${getDecisionButtonStyle(
+                          lastDecision,
+                          "Bid / Accepted"
+                        )}`}
+                      >
+                        Bid / Accepted
+                      </button>
+                    )}
 
                     <button
                       onClick={() =>
-                        updateStatus(rushee.id, "Needs More Feedback")
+                        updateDecision(rushee.id, "Needs More Votes")
                       }
                       className={`w-full rounded-xl border px-4 py-2 text-sm font-bold transition ${getDecisionButtonStyle(
-                        currentStatus,
-                        "Needs More Feedback"
+                        lastDecision,
+                        "Needs More Votes"
                       )}`}
                     >
-                      Needs Feedback
+                      Needs More Votes
                     </button>
 
                     <button
-                      onClick={() => updateStatus(rushee.id, "Maybe")}
+                      onClick={() => updateDecision(rushee.id, "Maybe")}
                       className={`w-full rounded-xl border px-4 py-2 text-sm font-bold transition ${getDecisionButtonStyle(
-                        currentStatus,
+                        lastDecision,
                         "Maybe"
                       )}`}
                     >
@@ -686,20 +781,22 @@ export default function HashDashboardPage() {
                     </button>
 
                     <button
-                      onClick={() => updateStatus(rushee.id, "Do Not Continue")}
+                      onClick={() =>
+                        updateDecision(rushee.id, "Not Continuing")
+                      }
                       className={`w-full rounded-xl border px-4 py-2 text-sm font-bold transition ${getDecisionButtonStyle(
-                        currentStatus,
-                        "Do Not Continue"
+                        lastDecision,
+                        "Not Continuing"
                       )}`}
                     >
-                      Do Not Continue
+                      Not Continuing
                     </button>
 
                     <button
-                      onClick={() => updateStatus(rushee.id, "Archived")}
+                      onClick={() => updateDecision(rushee.id, "Archive")}
                       className={`w-full rounded-xl border px-4 py-2 text-sm font-bold transition ${getDecisionButtonStyle(
-                        currentStatus,
-                        "Archived"
+                        lastDecision,
+                        "Archive"
                       )}`}
                     >
                       Archive

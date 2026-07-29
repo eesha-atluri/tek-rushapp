@@ -44,10 +44,21 @@ export const rushees = [
 ];
 
 export const events = [
-  "Info Night",
-  "Game Night",
-  "Professional Night",
-  "Coffee Chats",
+  "Info Session",
+  "DEI Panel",
+  "Meet & Greet #1",
+  "Meet & Greet #2",
+  "Apps Due",
+  "Hash #1 + Chapter",
+  "Closed Rush #1",
+  "Hash #2",
+  "Closed Rush #2",
+  "Hash #3 + Chapter",
+  "Interviews Day 1",
+  "Interviews Day 2",
+  "Final Hash #4",
+  "Fake Resume Round",
+  "Bid Night",
 ];
 
 export const feedback = [
