@@ -3,8 +3,8 @@
 import { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import BrotherNav from "@/app/components/BrotherNav";
-import { events, feedback, rushees } from "@/lib/mockData";
-import { getStoredRushees } from "@/lib/rusheeStorage";
+import { events as defaultEvents, feedback } from "@/lib/mockData";
+import { getStoredRushees, type Rushee } from "@/lib/rusheeStorage";
 
 type SavedFeedback = {
   id: string;
@@ -15,105 +15,99 @@ type SavedFeedback = {
   communication: number;
   passion: number;
   cultureFit: number;
-  fitAddChoice: string;
+  fitAddChoice: "Fit" | "Add" | "Neither";
   fitAddScore: number;
   comment: string;
 };
 
-function RatingButtons({
-  value,
-  setValue,
-}: {
-  value: number;
-  setValue: (value: number) => void;
-}) {
-  return (
-    <div className="mt-3 flex justify-between">
-      {[1, 2, 3, 4, 5].map((num) => (
-        <button
-          key={num}
-          type="button"
-          onClick={() => setValue(num)}
-          className={`h-11 w-11 rounded-full border text-sm font-bold ${
-            value === num
-              ? "border-[#061A33] bg-[#061A33] text-[#F4F1EA]"
-              : "border-[#061A33] bg-white text-[#061A33] hover:bg-[#F4F1EA]"
-          }`}
-        >
-          {num}
-        </button>
-      ))}
-    </div>
-  );
+type EventItem = {
+  id: string;
+  name: string;
+  date: string;
+  type: "Open Rush" | "Closed Rush";
+};
+
+function getStoredEvents(): EventItem[] {
+  if (typeof window === "undefined") {
+    return defaultEvents.map((event, index) => ({
+      id: String(index + 1),
+      name: event,
+      date: "",
+      type: "Open Rush",
+    }));
+  }
+
+  const savedEventsString = localStorage.getItem("tek-events");
+
+  if (savedEventsString) {
+    return JSON.parse(savedEventsString);
+  }
+
+  return defaultEvents.map((event, index) => ({
+    id: String(index + 1),
+    name: event,
+    date: "",
+    type: "Open Rush",
+  }));
 }
 
 export default function FeedbackPage() {
-  const router = useRouter();
   const params = useParams();
-  const id = params.id as string;
+  const router = useRouter();
 
-  const storedRushees = getStoredRushees();
-  const rushee = storedRushees.find((item) => item.id === id);
+  const rusheeId = params.id as string;
 
-  const [existingFeedback, setExistingFeedback] =
-    useState<SavedFeedback | null>(null);
+  const [rusheeList, setRusheeList] = useState<Rushee[]>([]);
+  const [rushee, setRushee] = useState<Rushee | null>(null);
+  const [eventList, setEventList] = useState<EventItem[]>([]);
+  const [allFeedback, setAllFeedback] = useState<SavedFeedback[]>([]);
 
   const [selectedEvents, setSelectedEvents] = useState<string[]>([]);
-  const [communication, setCommunication] = useState(0);
-  const [passion, setPassion] = useState(0);
-  const [cultureFit, setCultureFit] = useState(0);
-  const [fitAddChoice, setFitAddChoice] = useState("");
-  const [fitAddScore, setFitAddScore] = useState(0);
+  const [communication, setCommunication] = useState(3);
+  const [passion, setPassion] = useState(3);
+  const [cultureFit, setCultureFit] = useState(3);
+  const [fitAddChoice, setFitAddChoice] = useState<"Fit" | "Add" | "Neither">(
+    "Fit"
+  );
+  const [fitAddScore, setFitAddScore] = useState(3);
   const [comment, setComment] = useState("");
 
+  const [existingFeedbackId, setExistingFeedbackId] = useState<string | null>(
+    null
+  );
+
   useEffect(() => {
+    const storedRushees = getStoredRushees();
+    const currentRushee =
+      storedRushees.find((item) => item.id === rusheeId) || null;
+
+    setRusheeList(storedRushees);
+    setRushee(currentRushee);
+    setEventList(getStoredEvents());
+
     const savedFeedbackString = localStorage.getItem("tek-feedback");
 
     const savedFeedback: SavedFeedback[] = savedFeedbackString
       ? JSON.parse(savedFeedbackString)
       : feedback;
 
-    const foundFeedback =
-      savedFeedback.find((item) => item.rusheeId === id) || null;
+    setAllFeedback(savedFeedback);
 
-    if (foundFeedback) {
-      setExistingFeedback(foundFeedback);
-      setSelectedEvents(foundFeedback.events);
-      setCommunication(foundFeedback.communication);
-      setPassion(foundFeedback.passion);
-      setCultureFit(foundFeedback.cultureFit);
-      setFitAddChoice(foundFeedback.fitAddChoice);
-      setFitAddScore(foundFeedback.fitAddScore);
-      setComment(foundFeedback.comment);
-    } else {
-      setExistingFeedback(null);
-      setSelectedEvents([]);
-      setCommunication(0);
-      setPassion(0);
-      setCultureFit(0);
-      setFitAddChoice("");
-      setFitAddScore(0);
-      setComment("");
-    }
-  }, [id]);
-
-  if (!rushee) {
-    return (
-      <main className="min-h-screen bg-[#F4F1EA] text-[#061A33]">
-        <BrotherNav />
-
-        <section className="p-6">
-          <p>Rushee not found.</p>
-
-          <a href="/rush-board" className="mt-4 block font-bold text-[#061A33]">
-            Back to Rush Board
-          </a>
-        </section>
-      </main>
+    const existingFeedback = savedFeedback.find(
+      (item) => item.rusheeId === rusheeId
     );
-  }
 
-  const isEditingExistingFeedback = Boolean(existingFeedback);
+    if (existingFeedback) {
+      setExistingFeedbackId(existingFeedback.id);
+      setSelectedEvents(existingFeedback.events || []);
+      setCommunication(existingFeedback.communication);
+      setPassion(existingFeedback.passion);
+      setCultureFit(existingFeedback.cultureFit);
+      setFitAddChoice(existingFeedback.fitAddChoice);
+      setFitAddScore(existingFeedback.fitAddScore);
+      setComment(existingFeedback.comment);
+    }
+  }, [rusheeId]);
 
   function toggleEvent(eventName: string) {
     if (selectedEvents.includes(eventName)) {
@@ -123,28 +117,32 @@ export default function FeedbackPage() {
     }
   }
 
-  function saveFeedbackAndNext() {
-    saveFeedback("next");
+  function getNextUnvotedRusheeId(updatedFeedback: SavedFeedback[]) {
+    const currentIndex = rusheeList.findIndex((item) => item.id === rusheeId);
+
+    const orderedRushees = [
+      ...rusheeList.slice(currentIndex + 1),
+      ...rusheeList.slice(0, currentIndex),
+    ];
+
+    const nextUnvotedRushee = orderedRushees.find(
+      (item) =>
+        !updatedFeedback.some((feedbackItem) => feedbackItem.rusheeId === item.id)
+    );
+
+    return nextUnvotedRushee?.id || null;
   }
 
-  function saveFeedbackAndReturn() {
-    saveFeedback("board");
-  }
-
-  function saveFeedback(destination: "next" | "board") {
-    const currentRushee = rushee;
-
-    if (!currentRushee) {
-      return;
-    }
+  function saveFeedback(destination: "board" | "next") {
+    if (!rushee) return;
 
     const finalFitAddScore = fitAddChoice === "Neither" ? 0 : fitAddScore;
 
     const newFeedback: SavedFeedback = {
-      id: existingFeedback?.id || String(Date.now()),
-      rusheeId: currentRushee.id,
-      rusheeName: currentRushee.name,
-      rusheeNumber: currentRushee.number,
+      id: existingFeedbackId || String(Date.now()),
+      rusheeId: rushee.id,
+      rusheeName: rushee.name,
+      rusheeNumber: rushee.number,
       events: selectedEvents,
       communication,
       passion,
@@ -154,228 +152,274 @@ export default function FeedbackPage() {
       comment,
     };
 
-    const savedFeedbackString = localStorage.getItem("tek-feedback");
+    let updatedFeedback: SavedFeedback[];
 
-    const savedFeedback: SavedFeedback[] = savedFeedbackString
-      ? JSON.parse(savedFeedbackString)
-      : feedback;
+    if (existingFeedbackId) {
+      updatedFeedback = allFeedback.map((item) =>
+        item.id === existingFeedbackId ? newFeedback : item
+      );
+    } else {
+      updatedFeedback = [...allFeedback, newFeedback];
+    }
 
-    const alreadyExists = savedFeedback.some(
-      (item) => item.rusheeId === currentRushee.id
-    );
-
-    const updatedFeedback = alreadyExists
-      ? savedFeedback.map((item) =>
-          item.rusheeId === currentRushee.id ? newFeedback : item
-        )
-      : [...savedFeedback, newFeedback];
-
+    setAllFeedback(updatedFeedback);
     localStorage.setItem("tek-feedback", JSON.stringify(updatedFeedback));
-    setExistingFeedback(newFeedback);
 
-    if (destination === "board") {
-      router.push("/rush-board");
+    if (destination === "next") {
+      const nextRusheeId = getNextUnvotedRusheeId(updatedFeedback);
+
+      if (nextRusheeId) {
+        router.push(`/feedback/${nextRusheeId}`);
+      } else {
+        router.push("/rush-board");
+      }
+
       return;
     }
 
-    const nextUnvotedRushee = getStoredRushees().find((item) => {
-      const alreadyHasFeedback = updatedFeedback.some(
-        (feedbackItem) => feedbackItem.rusheeId === item.id
-      );
+    router.push("/rush-board");
+  }
 
-      return !alreadyHasFeedback && item.id !== currentRushee.id;
-    });
+  if (!rushee) {
+    return (
+      <main className="min-h-screen bg-[#F4F1EA] text-[#061A33]">
+        <BrotherNav />
 
-    if (nextUnvotedRushee) {
-      router.push(`/feedback/${nextUnvotedRushee.id}`);
-    } else {
-      router.push("/rush-board");
-    }
+        <section className="mx-auto max-w-3xl px-4 py-8">
+          <div className="rounded-3xl border border-[#E5E0D8] bg-white p-6 text-sm text-slate-600">
+            Rushee not found.
+          </div>
+        </section>
+      </main>
+    );
   }
 
   return (
     <main className="min-h-screen bg-[#F4F1EA] pb-20 text-[#061A33]">
       <BrotherNav />
 
-      <header className="bg-[#061A33] px-5 py-5 text-white">
-        <p className="text-xs uppercase tracking-[0.25em] text-[#C49A45]">
-          Brother View
-        </p>
+      <header className="bg-[#061A33] px-6 py-8 text-white">
+        <section className="mx-auto max-w-5xl">
+          <p className="text-xs font-bold uppercase tracking-[0.3em] text-[#C49A45]">
+            Brother View
+          </p>
 
-        <h1 className="mt-1 text-2xl font-extrabold">
-          {isEditingExistingFeedback ? "Edit Feedback" : "Submit Feedback"}
-        </h1>
+          <h1 className="mt-2 text-4xl font-extrabold">
+            {existingFeedbackId ? "Edit Note" : "Leave Note"}
+          </h1>
 
-        <p className="mt-2 text-sm text-white/70">
-          {isEditingExistingFeedback
-            ? "Your previous feedback is loaded below. Update it and continue."
-            : "Submit feedback, then move quickly to the next rushee."}
-        </p>
+          <p className="mt-3 max-w-2xl text-sm leading-6 text-white/70">
+            Submit your feedback privately. Brothers can see that you voted, but
+            not your ratings or comments.
+          </p>
+        </section>
       </header>
 
-      <form className="mx-auto max-w-md space-y-4 px-4 py-5">
-        <section className="rounded-2xl bg-white p-4 shadow-sm">
-          <div className="flex gap-3">
+      <section className="mx-auto max-w-5xl px-4 py-8">
+        <div className="grid gap-6 lg:grid-cols-[0.8fr_1.2fr]">
+          <aside className="rounded-3xl border border-[#E5E0D8] bg-white p-6 shadow-sm">
             <img
               src={rushee.photo}
               alt={rushee.name}
-              className="h-16 w-16 rounded-xl object-cover"
+              className="h-64 w-full rounded-3xl object-cover"
             />
 
-            <div>
-              <h2 className="text-lg font-bold">
+            <div className="mt-5">
+              <h2 className="text-3xl font-extrabold">
                 #{rushee.number} {rushee.name}
               </h2>
 
-              <p className="text-xs text-slate-500">
+              <p className="mt-2 text-base text-slate-600">
                 {rushee.major || "No major"} · {rushee.year || "No year"}
               </p>
+
+              <p className="mt-4 text-sm leading-6 text-slate-600">
+                Seen at:{" "}
+                {rushee.events.length > 0
+                  ? rushee.events.join(", ")
+                  : "No events yet"}
+              </p>
             </div>
-          </div>
-        </section>
 
-        <section className="rounded-2xl bg-white p-4 shadow-sm">
-          <p className="font-bold">Which events did you talk to them at?</p>
+            <div className="mt-5 rounded-2xl bg-[#F4F1EA] p-4">
+              <p className="text-xs font-bold uppercase tracking-wide text-slate-500">
+                Application Summary
+              </p>
 
-          <p className="text-sm text-slate-500">
-            Select all events where you interacted with this rushee.
-          </p>
+              <p className="mt-2 text-sm leading-6 text-slate-700">
+                {rushee.applicationSummary || "No summary provided."}
+              </p>
+            </div>
+          </aside>
 
-          <div className="mt-3 flex flex-wrap gap-2">
-            {events.map((event) => {
-              const isSelected = selectedEvents.includes(event);
+          <section className="rounded-3xl border border-[#E5E0D8] bg-white p-6 shadow-sm">
+            <div>
+              <h3 className="text-lg font-extrabold">Events Talked At</h3>
 
-              return (
-                <button
-                  type="button"
-                  key={event}
-                  onClick={() => toggleEvent(event)}
-                  className={`rounded-full border px-3 py-2 text-xs font-semibold ${
-                    isSelected
-                      ? "border-[#061A33] bg-[#061A33] text-[#F4F1EA]"
-                      : "border-[#061A33] bg-white text-[#061A33] hover:bg-[#F4F1EA]"
-                  }`}
+              <p className="mt-1 text-sm text-slate-500">
+                Select every event where you interacted with this rushee.
+              </p>
+
+              <div className="mt-4 flex flex-wrap gap-2">
+                {eventList.map((event) => {
+                  const isSelected = selectedEvents.includes(event.name);
+
+                  return (
+                    <button
+                      type="button"
+                      key={event.id}
+                      onClick={() => toggleEvent(event.name)}
+                      className={`rounded-full border px-4 py-2 text-sm font-bold ${
+                        isSelected
+                          ? "border-[#061A33] bg-[#061A33] text-[#F4F1EA]"
+                          : "border-[#061A33] bg-white text-[#061A33] hover:bg-[#F4F1EA]"
+                      }`}
+                    >
+                      {isSelected ? "✓ " : ""}
+                      {event.name}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+
+            <div className="mt-8 grid gap-4 md:grid-cols-3">
+              <label className="rounded-2xl bg-[#F4F1EA] p-4">
+                <span className="text-sm font-extrabold">Communication</span>
+                <select
+                  value={communication}
+                  onChange={(event) => setCommunication(Number(event.target.value))}
+                  className="mt-3 w-full rounded-xl border border-[#E5E0D8] bg-white px-3 py-3 text-sm outline-none"
                 >
-                  {isSelected ? "✓ " : ""}
-                  {event}
-                </button>
-              );
-            })}
-          </div>
-        </section>
+                  {[1, 2, 3, 4, 5].map((score) => (
+                    <option key={score} value={score}>
+                      {score}
+                    </option>
+                  ))}
+                </select>
+              </label>
 
-        <section className="rounded-2xl bg-white p-4 shadow-sm">
-          <p className="font-bold">1. Communication</p>
-          <p className="text-sm text-slate-500">Can they hold a conversation?</p>
-          <RatingButtons value={communication} setValue={setCommunication} />
-        </section>
+              <label className="rounded-2xl bg-[#F4F1EA] p-4">
+                <span className="text-sm font-extrabold">Passion</span>
+                <select
+                  value={passion}
+                  onChange={(event) => setPassion(Number(event.target.value))}
+                  className="mt-3 w-full rounded-xl border border-[#E5E0D8] bg-white px-3 py-3 text-sm outline-none"
+                >
+                  {[1, 2, 3, 4, 5].map((score) => (
+                    <option key={score} value={score}>
+                      {score}
+                    </option>
+                  ))}
+                </select>
+              </label>
 
-        <section className="rounded-2xl bg-white p-4 shadow-sm">
-          <p className="font-bold">2. Passion / Interest</p>
-          <p className="text-sm text-slate-500">
-            Do they genuinely seem interested in TEK?
-          </p>
-          <RatingButtons value={passion} setValue={setPassion} />
-        </section>
+              <label className="rounded-2xl bg-[#F4F1EA] p-4">
+                <span className="text-sm font-extrabold">Culture Fit</span>
+                <select
+                  value={cultureFit}
+                  onChange={(event) => setCultureFit(Number(event.target.value))}
+                  className="mt-3 w-full rounded-xl border border-[#E5E0D8] bg-white px-3 py-3 text-sm outline-none"
+                >
+                  {[1, 2, 3, 4, 5].map((score) => (
+                    <option key={score} value={score}>
+                      {score}
+                    </option>
+                  ))}
+                </select>
+              </label>
+            </div>
 
-        <section className="rounded-2xl bg-white p-4 shadow-sm">
-          <p className="font-bold">3. Culture Fit</p>
-          <p className="text-sm text-slate-500">
-            Do you see them vibing with TEK?
-          </p>
-          <RatingButtons value={cultureFit} setValue={setCultureFit} />
-        </section>
+            <div className="mt-8 rounded-2xl bg-[#F4F1EA] p-4">
+              <h3 className="text-lg font-extrabold">Fit / Add</h3>
 
-        <section className="rounded-2xl bg-white p-4 shadow-sm">
-          <p className="font-bold">4. Fit, Add, or Neither</p>
+              <p className="mt-1 text-sm text-slate-500">
+                Choose whether they feel like a strong fit, add something new,
+                or neither.
+              </p>
 
-          <p className="text-sm text-slate-500">
-            Choose the strongest category for this rushee.
-          </p>
+              <div className="mt-4 grid gap-2 md:grid-cols-3">
+                {(["Fit", "Add", "Neither"] as const).map((choice) => (
+                  <button
+                    key={choice}
+                    type="button"
+                    onClick={() => setFitAddChoice(choice)}
+                    className={`rounded-2xl border px-4 py-3 text-sm font-bold ${
+                      fitAddChoice === choice
+                        ? "border-[#061A33] bg-[#061A33] text-[#F4F1EA]"
+                        : "border-[#061A33] bg-white text-[#061A33] hover:bg-[#F4F1EA]"
+                    }`}
+                  >
+                    {choice}
+                  </button>
+                ))}
+              </div>
 
-          <div className="mt-3 grid grid-cols-3 gap-2">
-            {["Fit", "Add", "Neither"].map((choice) => (
+              {fitAddChoice !== "Neither" && (
+                <label className="mt-4 block text-sm font-bold">
+                  Fit/Add Score
+                  <select
+                    value={fitAddScore}
+                    onChange={(event) =>
+                      setFitAddScore(Number(event.target.value))
+                    }
+                    className="mt-2 w-full rounded-xl border border-[#E5E0D8] bg-white px-3 py-3 text-sm font-normal outline-none"
+                  >
+                    {[1, 2, 3, 4, 5].map((score) => (
+                      <option key={score} value={score}>
+                        {score}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+              )}
+
+              {fitAddChoice === "Neither" && (
+                <p className="mt-4 rounded-xl bg-white p-3 text-sm text-slate-600">
+                  Fit/Add score will automatically save as 0.
+                </p>
+              )}
+            </div>
+
+            <label className="mt-8 block">
+              <span className="text-lg font-extrabold">Comment</span>
+
+              <textarea
+                value={comment}
+                onChange={(event) => setComment(event.target.value)}
+                placeholder="Write a specific note that would help during hash..."
+                className="mt-3 min-h-36 w-full rounded-2xl border border-[#E5E0D8] bg-white px-4 py-4 text-sm leading-6 outline-none"
+              />
+            </label>
+
+            <div className="mt-8 flex flex-col gap-3 sm:flex-row sm:justify-end">
               <button
                 type="button"
-                key={choice}
-                onClick={() => {
-                  setFitAddChoice(choice);
-
-                  if (choice === "Neither") {
-                    setFitAddScore(0);
-                  }
-                }}
-                className={`rounded-xl border px-3 py-3 text-sm font-bold ${
-                  fitAddChoice === choice
-                    ? "border-[#061A33] bg-[#061A33] text-[#F4F1EA]"
-                    : "border-[#061A33] bg-white text-[#061A33] hover:bg-[#F4F1EA]"
-                }`}
+                onClick={() => router.push("/rush-board")}
+                className="rounded-full border border-[#061A33] px-6 py-3 text-sm font-bold text-[#061A33]"
               >
-                {choice}
+                Cancel
               </button>
-            ))}
-          </div>
-        </section>
 
-        {fitAddChoice !== "" && fitAddChoice !== "Neither" && (
-          <section className="rounded-2xl bg-white p-4 shadow-sm">
-            <p className="font-bold">5. {fitAddChoice} Score</p>
+              <button
+                type="button"
+                onClick={() => saveFeedback("board")}
+                className="rounded-full border border-[#061A33] bg-white px-6 py-3 text-sm font-bold text-[#061A33]"
+              >
+                Save & Return
+              </button>
 
-            <p className="text-sm text-slate-500">
-              Rate how strongly they are a {fitAddChoice.toLowerCase()}.
-            </p>
-
-            <RatingButtons value={fitAddScore} setValue={setFitAddScore} />
-          </section>
-        )}
-
-        {fitAddChoice === "Neither" && (
-          <section className="rounded-2xl bg-white p-4 shadow-sm">
-            <p className="font-bold">5. Fit/Add Score</p>
-
-            <p className="text-sm text-slate-500">
-              Auto-set to 0 because Neither was selected.
-            </p>
-
-            <div className="mt-3 rounded-xl bg-[#F4F1EA] p-4 text-center text-2xl font-extrabold text-slate-500">
-              0
+              <button
+                type="button"
+                onClick={() => saveFeedback("next")}
+                className="rounded-full bg-[#061A33] px-6 py-3 text-sm font-bold text-[#F4F1EA]"
+              >
+                Save & Next
+              </button>
             </div>
           </section>
-        )}
-
-        <section className="rounded-2xl bg-white p-4 shadow-sm">
-          <p className="font-bold">Comment</p>
-
-          <p className="text-sm text-slate-500">
-            Add any notes from your interaction.
-          </p>
-
-          <textarea
-            value={comment}
-            onChange={(event) => setComment(event.target.value)}
-            placeholder="Write notes here..."
-            className="mt-3 min-h-28 w-full rounded-xl border border-[#E5E0D8] p-3 text-sm outline-none"
-          />
-        </section>
-
-        <div className="space-y-3">
-          <button
-            type="button"
-            onClick={saveFeedbackAndNext}
-            className="w-full rounded-xl bg-[#061A33] px-4 py-4 font-bold text-[#F4F1EA] shadow-lg"
-          >
-            {isEditingExistingFeedback ? "Update & Next" : "Save & Next"}
-          </button>
-
-          <button
-            type="button"
-            onClick={saveFeedbackAndReturn}
-            className="w-full rounded-xl border border-[#061A33] bg-white px-4 py-4 font-bold text-[#061A33]"
-          >
-            Save & Return to Board
-          </button>
         </div>
-      </form>
+      </section>
     </main>
   );
 }

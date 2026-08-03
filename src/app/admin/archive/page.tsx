@@ -1,9 +1,9 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import AdminNav from "@/app/components/AdminNav";
 import { feedback } from "@/lib/mockData";
 import { getStoredRushees, type Rushee } from "@/lib/rusheeStorage";
-import AdminNav from "@/app/components/AdminNav";
 
 type SavedFeedback = {
   id: string;
@@ -19,35 +19,38 @@ type SavedFeedback = {
   comment: string;
 };
 
-type RusheeStatus =
-  | "Active Rush"
-  | "Needs More Feedback"
-  | "Next Round"
-  | "Maybe"
-  | "Do Not Continue"
+type RusheeStage =
+  | "Hash #1"
+  | "Hash #2"
+  | "Hash #3"
+  | "Final Hash #4"
+  | "Bid / Accepted"
+  | "Not Continuing"
   | "Archived";
 
 function getAverage(scores: number[]) {
   if (scores.length === 0) return "N/A";
-
   const total = scores.reduce((sum, score) => sum + score, 0);
   return (total / scores.length).toFixed(1);
 }
 
 export default function AdminArchivePage() {
-   const [rusheeList, setRusheeList] = useState<Rushee[]>([]);
-  const [statuses, setStatuses] = useState<Record<string, RusheeStatus>>({});
+  const [rusheeList, setRusheeList] = useState<Rushee[]>([]);
+  const [stages, setStages] = useState<Record<string, RusheeStage>>({});
   const [allFeedback, setAllFeedback] = useState<SavedFeedback[]>([]);
 
   useEffect(() => {
-    setRusheeList(getStoredRushees());
-    const savedStatusesString = localStorage.getItem("tek-rushee-statuses");
+    const storedRushees = getStoredRushees();
+    setRusheeList(storedRushees);
+
+    const savedStagesString = localStorage.getItem("tek-rushee-stages");
+    const savedStages: Record<string, RusheeStage> = savedStagesString
+      ? JSON.parse(savedStagesString)
+      : {};
+
+    setStages(savedStages);
+
     const savedFeedbackString = localStorage.getItem("tek-feedback");
-
-    if (savedStatusesString) {
-      setStatuses(JSON.parse(savedStatusesString));
-    }
-
     const savedFeedback: SavedFeedback[] = savedFeedbackString
       ? JSON.parse(savedFeedbackString)
       : feedback;
@@ -55,52 +58,52 @@ export default function AdminArchivePage() {
     setAllFeedback(savedFeedback);
   }, []);
 
-  function unarchiveRushee(rusheeId: string) {
-    const updatedStatuses = {
-      ...statuses,
-      [rusheeId]: "Active Rush" as RusheeStatus,
+  function restoreRushee(rusheeId: string) {
+    const updatedStages = {
+      ...stages,
+      [rusheeId]: "Hash #1" as RusheeStage,
     };
 
-    setStatuses(updatedStatuses);
-    localStorage.setItem(
-      "tek-rushee-statuses",
-      JSON.stringify(updatedStatuses)
-    );
+    setStages(updatedStages);
+    localStorage.setItem("tek-rushee-stages", JSON.stringify(updatedStages));
   }
 
   const archivedRushees = rusheeList.filter(
-    (rushee) => statuses[rushee.id] === "Archived"
+    (rushee) => stages[rushee.id] === "Archived"
   );
 
   return (
     <main className="min-h-screen bg-[#F4F1EA] text-[#061A33]">
-        <AdminNav />
-      <header className="bg-[#061A33] px-6 py-5 text-white">
-       
+      <AdminNav />
 
-        <p className="mt-4 text-xs uppercase tracking-[0.25em] text-[#C49A45]">
-          Admin
-        </p>
+      <header className="bg-[#061A33] px-6 py-8 text-white">
+        <section className="mx-auto max-w-7xl">
+          <p className="text-xs uppercase tracking-[0.25em] text-[#C49A45]">
+            Admin
+          </p>
 
-        <h1 className="mt-1 text-2xl font-extrabold">Archive</h1>
+          <h1 className="mt-2 text-4xl font-extrabold">Archive</h1>
 
-        <p className="mt-2 text-sm text-slate-300">
-          View rushees removed from the active rush board while keeping their
-          feedback history.
-        </p>
+          <p className="mt-3 max-w-2xl text-sm leading-6 text-white/70">
+            View rushees removed from the active rush process while keeping
+            their feedback history.
+          </p>
+        </section>
       </header>
 
-      <section className="mx-auto max-w-5xl px-4 py-6">
-        <div className="mb-4 rounded-2xl bg-white p-4 shadow-sm">
+      <section className="mx-auto max-w-7xl px-4 py-8">
+        <div className="mb-6 rounded-2xl border border-[#E5E0D8] bg-white p-5">
           <p className="text-sm text-slate-500">Archived Rushees</p>
-          <p className="text-3xl font-extrabold">{archivedRushees.length}</p>
+          <p className="mt-1 text-4xl font-extrabold">
+            {archivedRushees.length}
+          </p>
         </div>
 
-        <div className="space-y-4">
+        <div className="grid gap-5 lg:grid-cols-2">
           {archivedRushees.length === 0 && (
-            <div className="rounded-2xl bg-white p-5 text-sm text-slate-600 shadow-sm">
-              No rushees are archived yet. Archive someone from the Hash
-              Dashboard first.
+            <div className="rounded-2xl border border-[#E5E0D8] bg-white p-6 text-sm text-slate-600">
+              No rushees are archived yet. Archive someone from Rush Decisions
+              first.
             </div>
           )}
 
@@ -109,91 +112,100 @@ export default function AdminArchivePage() {
               (item) => item.rusheeId === rushee.id
             );
 
-            const communicationAvg = getAverage(
-              rusheeFeedback.map((item) => item.communication)
-            );
-
-            const passionAvg = getAverage(
-              rusheeFeedback.map((item) => item.passion)
-            );
-
-            const cultureFitAvg = getAverage(
-              rusheeFeedback.map((item) => item.cultureFit)
-            );
-
             return (
-              <div
+              <article
                 key={rushee.id}
-                className="rounded-2xl bg-white p-4 shadow-sm"
+                className="rounded-3xl border border-[#E5E0D8] bg-white p-5 shadow-sm"
               >
-                <div className="flex gap-4">
-                  <img
-                    src={rushee.photo}
-                    alt={rushee.name}
-                    className="h-16 w-16 rounded-2xl object-cover"
-                  />
+                <div className="flex gap-5">
+                 <div className="shrink-0 overflow-hidden rounded-3xl bg-[#F0E8DA] h-44 w-44 lg:h-52 lg:w-52">
+  <img
+    src={rushee.photo}
+    alt={rushee.name}
+    className="h-full w-full object-cover object-center"
+  />
+</div>
 
-                  <div className="flex-1">
+                  <div className="min-w-0 flex-1">
                     <div className="flex items-start justify-between gap-3">
                       <div>
-                        <h2 className="font-extrabold">
+                        <h2 className="text-xl font-extrabold">
                           #{rushee.number} {rushee.name}
                         </h2>
 
-                        <p className="text-xs text-slate-500">
-                          {rushee.major} · {rushee.year}
+                        <p className="mt-1 text-sm text-slate-600">
+                          {rushee.major || "No major"} ·{" "}
+                          {rushee.year || "No year"}
                         </p>
                       </div>
 
-                      <span className="rounded-full bg-slate-100 px-3 py-1 text-xs font-bold text-slate-700">
+                      <span className="rounded-full bg-[#F4F1EA] px-3 py-1 text-xs font-bold">
                         Archived
                       </span>
                     </div>
 
-                    <p className="mt-2 text-xs text-slate-600">
-                      Events: {rushee.events.join(", ")}
+                    <p className="mt-3 text-sm text-slate-600">
+                      Seen at:{" "}
+                      {rushee.events.length > 0
+                        ? rushee.events.join(", ")
+                        : "No events yet"}
                     </p>
 
-                    <div className="mt-4 grid grid-cols-4 gap-2 text-center">
-                      <div className="rounded-xl bg-[#F4F1EA] p-3">
-                        <p className="font-extrabold">{rusheeFeedback.length}</p>
+                    <div className="mt-5 grid grid-cols-4 gap-2 text-center">
+                      <div className="rounded-2xl bg-[#F4F1EA] p-3">
+                        <p className="font-extrabold">
+                          {rusheeFeedback.length}
+                        </p>
                         <p className="text-xs text-slate-500">Reviews</p>
                       </div>
 
-                      <div className="rounded-xl bg-[#F4F1EA] p-3">
-                        <p className="font-extrabold">{communicationAvg}</p>
+                      <div className="rounded-2xl bg-[#F4F1EA] p-3">
+                        <p className="font-extrabold">
+                          {getAverage(
+                            rusheeFeedback.map((item) => item.communication)
+                          )}
+                        </p>
                         <p className="text-xs text-slate-500">Comm</p>
                       </div>
 
-                      <div className="rounded-xl bg-[#F4F1EA] p-3">
-                        <p className="font-extrabold">{passionAvg}</p>
+                      <div className="rounded-2xl bg-[#F4F1EA] p-3">
+                        <p className="font-extrabold">
+                          {getAverage(
+                            rusheeFeedback.map((item) => item.passion)
+                          )}
+                        </p>
                         <p className="text-xs text-slate-500">Passion</p>
                       </div>
 
-                      <div className="rounded-xl bg-[#F4F1EA] p-3">
-                        <p className="font-extrabold">{cultureFitAvg}</p>
+                      <div className="rounded-2xl bg-[#F4F1EA] p-3">
+                        <p className="font-extrabold">
+                          {getAverage(
+                            rusheeFeedback.map((item) => item.cultureFit)
+                          )}
+                        </p>
                         <p className="text-xs text-slate-500">Culture</p>
                       </div>
                     </div>
 
-                    <div className="mt-4 flex flex-wrap gap-2">
+                    <div className="mt-5 flex flex-wrap gap-2">
                       <a
-                        href={`/rushees/${rushee.id}`}
-                        className="rounded-full border border-[#061A33] px-3 py-1 text-xs font-bold text-[#061A33]"
+                        href={`/admin/rushees/${rushee.id}`}
+                        className="rounded-full border border-[#061A33] px-4 py-2 text-sm font-bold text-[#061A33]"
                       >
-                        View Profile
+                        Admin Profile
                       </a>
 
                       <button
-                        onClick={() => unarchiveRushee(rushee.id)}
-                        className="rounded-full bg-[#061A33] px-3 py-1 text-xs font-bold text-white"
+                        type="button"
+                        onClick={() => restoreRushee(rushee.id)}
+                        className="rounded-full bg-[#061A33] px-4 py-2 text-sm font-bold text-[#F4F1EA]"
                       >
-                        Restore to Active Rush
+                        Restore to Hash #1
                       </button>
                     </div>
                   </div>
                 </div>
-              </div>
+              </article>
             );
           })}
         </div>
