@@ -168,6 +168,7 @@ export default function AdminRusheesPage() {
   const [selectedRequiredBrotherIds, setSelectedRequiredBrotherIds] = useState<
     string[]
   >([]);
+  const [brotherSearch, setBrotherSearch] = useState("");
 
   const [search, setSearch] = useState("");
   const [stageFilter, setStageFilter] = useState("All");
@@ -279,6 +280,7 @@ export default function AdminRusheesPage() {
     setSelectedStage("Hash #1");
     setSelectedEventIds([]);
     setSelectedRequiredBrotherIds([]);
+    setBrotherSearch("");
     setErrorMessage("");
   }
 
@@ -294,6 +296,7 @@ export default function AdminRusheesPage() {
     setSelectedStage(getRusheeStage(rushee));
     setSelectedEventIds(getRusheeEventIds(rushee));
     setSelectedRequiredBrotherIds(getRequiredBrotherIds(rushee));
+    setBrotherSearch("");
     setErrorMessage("");
 
     window.scrollTo({
@@ -320,6 +323,104 @@ export default function AdminRusheesPage() {
     }
 
     setSelectedRequiredBrotherIds([...selectedRequiredBrotherIds, brotherId]);
+  }
+
+  async function resizeImageBeforeUpload(file: File): Promise<File> {
+    const maxWidth = 1000;
+    const quality = 0.82;
+
+    const imageBitmap = await createImageBitmap(file);
+
+    const scale = Math.min(1, maxWidth / imageBitmap.width);
+    const targetWidth = Math.round(imageBitmap.width * scale);
+    const targetHeight = Math.round(imageBitmap.height * scale);
+
+    const canvas = document.createElement("canvas");
+    canvas.width = targetWidth;
+    canvas.height = targetHeight;
+
+    const ctx = canvas.getContext("2d");
+
+    if (!ctx) {
+      throw new Error("Could not resize image.");
+    }
+
+    ctx.drawImage(imageBitmap, 0, 0, targetWidth, targetHeight);
+
+    const blob = await new Promise<Blob>((resolve, reject) => {
+      canvas.toBlob(
+        (result) => {
+          if (!result) {
+            reject(new Error("Could not convert image."));
+            return;
+          }
+
+          resolve(result);
+        },
+        "image/jpeg",
+        quality
+      );
+    });
+
+    const safeOriginalName = file.name.replace(/\.[^/.]+$/, "");
+
+    return new File([blob], `${safeOriginalName}.jpg`, {
+      type: "image/jpeg",
+    });
+  }
+
+  async function uploadRusheePhoto(file: File) {
+    try {
+      setUploadingPhoto(true);
+      setErrorMessage("");
+
+      if (!file.type.startsWith("image/")) {
+        throw new Error("Please upload an image file.");
+      }
+
+      if (file.size > 10 * 1024 * 1024) {
+        throw new Error("Original photo must be under 10 MB.");
+      }
+
+      const resizedFile = await resizeImageBeforeUpload(file);
+
+      if (resizedFile.size > 5 * 1024 * 1024) {
+        throw new Error("Compressed photo is still over 5 MB.");
+      }
+
+      const safeName =
+        name.trim().toLowerCase().replace(/[^a-z0-9]+/g, "-") || "rushee";
+
+      const filePath = `rush-2026/${Date.now()}-${safeName}.jpg`;
+
+      const { error: uploadError } = await supabase.storage
+        .from("rushee-photos")
+        .upload(filePath, resizedFile, {
+          upsert: true,
+          contentType: "image/jpeg",
+        });
+
+      if (uploadError) {
+        throw uploadError;
+      }
+
+      const { data } = supabase.storage
+        .from("rushee-photos")
+        .getPublicUrl(filePath);
+
+      if (!data.publicUrl) {
+        throw new Error("Could not get public photo URL.");
+      }
+
+      setPhoto(data.publicUrl);
+    } catch (error) {
+      console.error("Photo upload failed:", error);
+      setErrorMessage(
+        error instanceof Error ? error.message : "Could not upload photo."
+      );
+    } finally {
+      setUploadingPhoto(false);
+    }
   }
 
   async function syncRusheeEvents(rusheeId: string) {
@@ -407,55 +508,6 @@ export default function AdminRusheesPage() {
 
     if (error) throw error;
   }
-  async function uploadRusheePhoto(file: File) {
-  try {
-    setUploadingPhoto(true);
-    setErrorMessage("");
-
-    if (!file.type.startsWith("image/")) {
-      throw new Error("Please upload an image file.");
-    }
-
-    if (file.size > 5 * 1024 * 1024) {
-      throw new Error("Photo must be under 5 MB.");
-    }
-
-    const safeName =
-      name.trim().toLowerCase().replace(/[^a-z0-9]+/g, "-") || "rushee";
-
-    const extension = file.name.split(".").pop() || "jpg";
-
-    const filePath = `rush-2026/${Date.now()}-${safeName}.${extension}`;
-
-    const { error: uploadError } = await supabase.storage
-      .from("rushee-photos")
-      .upload(filePath, file, {
-        upsert: true,
-        contentType: file.type,
-      });
-
-    if (uploadError) {
-      throw uploadError;
-    }
-
-    const { data } = supabase.storage
-      .from("rushee-photos")
-      .getPublicUrl(filePath);
-
-    if (!data.publicUrl) {
-      throw new Error("Could not get public photo URL.");
-    }
-
-    setPhoto(data.publicUrl);
-  } catch (error) {
-    console.error("Photo upload failed:", error);
-    setErrorMessage(
-      error instanceof Error ? error.message : "Could not upload photo."
-    );
-  } finally {
-    setUploadingPhoto(false);
-  }
-}
 
   async function saveRushee() {
     const trimmedName = name.trim();
@@ -611,6 +663,19 @@ export default function AdminRusheesPage() {
     }
   }
 
+  const filteredBrotherList = useMemo(() => {
+    const query = brotherSearch.toLowerCase().trim();
+
+    if (!query) return brotherList;
+
+    return brotherList.filter((brother) => {
+      return (
+        brother.name.toLowerCase().includes(query) ||
+        brother.email.toLowerCase().includes(query)
+      );
+    });
+  }, [brotherList, brotherSearch]);
+
   const yearOptions = useMemo(() => {
     return Array.from(
       new Set(rusheeList.map((rushee) => rushee.year || "").filter(Boolean))
@@ -737,7 +802,7 @@ export default function AdminRusheesPage() {
           </div>
 
           {errorMessage && (
-            <p className="mt-5 rounded-2xl bg-[#F5E8EA] p-4 text-sm font-bold text-[#8A1F2D] whitespace-pre-wrap">
+            <p className="mt-5 whitespace-pre-wrap rounded-2xl bg-[#F5E8EA] p-4 text-sm font-bold text-[#8A1F2D]">
               {errorMessage}
             </p>
           )}
@@ -797,51 +862,52 @@ export default function AdminRusheesPage() {
               </label>
             </div>
 
-           <div>
-  <p className="text-sm font-bold">Photo</p>
+            <div>
+              <p className="text-sm font-bold">Photo</p>
 
-  {photo && (
-    <div className="mt-3 overflow-hidden rounded-2xl bg-[#F0E8DA]">
-      <img
-        src={photo}
-        alt="Rushee preview"
-        className="h-56 w-full object-cover object-center"
-      />
-    </div>
-  )}
+              {photo && (
+                <div className="mt-3 overflow-hidden rounded-2xl bg-[#F0E8DA]">
+                  <img
+                    src={photo}
+                    alt="Rushee preview"
+                    className="h-56 w-full object-cover object-center"
+                  />
+                </div>
+              )}
 
-  <label className="mt-3 block text-sm font-bold">
-    Upload Photo
-    <input
-      type="file"
-      accept="image/jpeg,image/png,image/webp"
-      onChange={(event) => {
-        const file = event.target.files?.[0];
-        if (file) {
-          uploadRusheePhoto(file);
-        }
-      }}
-      disabled={uploadingPhoto || saving}
-      className="mt-2 w-full rounded-2xl border border-[#E5DDD0] bg-white px-4 py-3 text-sm font-normal outline-none disabled:opacity-50"
-    />
-  </label>
+              <label className="mt-3 block text-sm font-bold">
+                Upload Photo
+                <input
+                  type="file"
+                  accept="image/jpeg,image/png,image/webp"
+                  onChange={(event) => {
+                    const file = event.target.files?.[0];
 
-  <label className="mt-3 block text-sm font-bold">
-    Photo URL
-    <input
-      value={photo}
-      onChange={(event) => setPhoto(event.target.value)}
-      placeholder="Upload a photo or paste a URL"
-      className="mt-2 w-full rounded-2xl border border-[#E5DDD0] bg-white px-4 py-3 text-sm font-normal outline-none"
-    />
-  </label>
+                    if (file) {
+                      uploadRusheePhoto(file);
+                    }
+                  }}
+                  disabled={uploadingPhoto || saving}
+                  className="mt-2 w-full rounded-2xl border border-[#E5DDD0] bg-white px-4 py-3 text-sm font-normal outline-none disabled:opacity-50"
+                />
+              </label>
 
-  {uploadingPhoto && (
-    <p className="mt-2 text-sm font-bold text-[#8A6500]">
-      Uploading photo...
-    </p>
-  )}
-</div>
+              <label className="mt-3 block text-sm font-bold">
+                Photo URL
+                <input
+                  value={photo}
+                  onChange={(event) => setPhoto(event.target.value)}
+                  placeholder="Upload a photo or paste a URL"
+                  className="mt-2 w-full rounded-2xl border border-[#E5DDD0] bg-white px-4 py-3 text-sm font-normal outline-none"
+                />
+              </label>
+
+              {uploadingPhoto && (
+                <p className="mt-2 text-sm font-bold text-[#8A6500]">
+                  Uploading photo...
+                </p>
+              )}
+            </div>
 
             <label className="text-sm font-bold">
               Application Summary
@@ -912,8 +978,21 @@ export default function AdminRusheesPage() {
                 </span>
               </div>
 
+              <input
+                value={brotherSearch}
+                onChange={(event) => setBrotherSearch(event.target.value)}
+                placeholder="Search brothers by name or email..."
+                className="mt-3 w-full rounded-2xl border border-[#E5DDD0] bg-white px-4 py-3 text-sm outline-none"
+              />
+
               <div className="mt-3 grid max-h-72 gap-2 overflow-y-auto rounded-2xl border border-[#E5DDD0] p-3">
-                {brotherList.map((brother) => {
+                {filteredBrotherList.length === 0 && (
+                  <p className="rounded-2xl bg-[#F6F1E8] p-4 text-sm text-slate-600">
+                    No brothers match this search.
+                  </p>
+                )}
+
+                {filteredBrotherList.map((brother) => {
                   const selected = selectedRequiredBrotherIds.includes(
                     brother.id
                   );
@@ -931,6 +1010,9 @@ export default function AdminRusheesPage() {
                     >
                       {selected ? "✓ " : ""}
                       {brother.name}
+                      <span className="ml-2 text-xs font-normal opacity-70">
+                        {brother.email}
+                      </span>
                     </button>
                   );
                 })}
