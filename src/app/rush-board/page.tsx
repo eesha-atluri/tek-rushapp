@@ -260,8 +260,7 @@ export default function RushBoardPage() {
               </h1>
 
               <p className="mt-4 max-w-2xl text-lg leading-8 text-white/70">
-                Logged in as {currentBrother.name}. Required Feedback shows
-                rushees who listed you as one of the brothers they talked to.
+                Logged in as {currentBrother.name}. Please fill out required feedback!
               </p>
             </div>
 

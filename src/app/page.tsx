@@ -69,14 +69,11 @@ export default function Home() {
             </p>
 
             <h1 className="mt-6 text-5xl font-black leading-tight tracking-tight text-[#071E34] md:text-7xl">
-              Rush feedback,
-              <br />
-              organized.
+              Rush Feedback Iota Class
             </h1>
 
             <p className="mx-auto mt-6 max-w-2xl text-lg leading-9 text-slate-600 md:text-xl">
-              Sign in with your TEK account to manage rush decisions, events,
-              and brother feedback.
+              🕷️
             </p>
 
             <div className="mx-auto mt-10 max-w-xl rounded-3xl border border-[#E5DDD0] bg-white p-6 text-left shadow-sm">

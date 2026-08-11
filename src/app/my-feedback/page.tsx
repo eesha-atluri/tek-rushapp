@@ -166,7 +166,7 @@ export default function MyFeedbackPage() {
           </h1>
 
           <p className="mt-4 max-w-2xl text-lg leading-8 text-white/70">
-            Notes submitted by {currentBrother.name}.
+          {currentBrother.name} Notes
           </p>
         </section>
       </header>
