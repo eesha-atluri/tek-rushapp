@@ -73,7 +73,7 @@ export default function Home() {
             </h1>
 
             <p className="mx-auto mt-6 max-w-2xl text-lg leading-9 text-slate-600 md:text-xl">
-              🕷️
+              🕷️ (Email is case sensitive (use all lowercase))
             </p>
 
             <div className="mx-auto mt-10 max-w-xl rounded-3xl border border-[#E5DDD0] bg-white p-6 text-left shadow-sm">
@@ -117,7 +117,7 @@ export default function Home() {
         </div>
 
         <p className="pb-4 text-center text-xs uppercase tracking-[0.3em] text-slate-500">
-          Professional Technology Fraternity
+          2026
         </p>
       </section>
     </main>
