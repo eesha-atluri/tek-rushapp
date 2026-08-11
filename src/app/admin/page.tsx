@@ -9,21 +9,6 @@ import {
   type CurrentBrother,
 } from "@/lib/backend/currentBrother";
 
-type BrotherRow = {
-  id: string;
-  name: string;
-  email: string;
-  role: "admin" | "brother";
-};
-
-type EventRow = {
-  id: string;
-  name: string;
-  date: string | null;
-  time: string | null;
-  type: "Open Rush" | "Closed Rush";
-};
-
 type RusheeStage =
   | "Hash #1"
   | "Hash #2"
@@ -33,20 +18,6 @@ type RusheeStage =
   | "Not Continuing"
   | "Archived";
 
-type RusheeEventRow = {
-  event_id: string;
-  events: EventRow | EventRow[] | null;
-};
-
-type RusheeAssignmentRow = {
-  brother_id: string;
-  brothers: BrotherRow | BrotherRow[] | null;
-};
-
-type HashDecisionRow = {
-  stage: RusheeStage;
-};
-
 type RusheeRow = {
   id: string;
   number: number;
@@ -55,12 +26,39 @@ type RusheeRow = {
   year: string | null;
   gender: string | null;
   photo: string | null;
-  application_summary: string | null;
-  assigned_brother_id: string | null;
-  rushee_events?: RusheeEventRow[] | RusheeEventRow | null;
-  rushee_assignments?: RusheeAssignmentRow[] | RusheeAssignmentRow | null;
-  hash_decisions?: HashDecisionRow[] | HashDecisionRow | null;
+  created_at: string;
 };
+
+type HashDecisionRow = {
+  rushee_id: string;
+  stage: RusheeStage;
+  updated_at: string;
+  rushees: RusheeRow | null;
+};
+
+type FeedbackRow = {
+  id: string;
+  rushee_id: string;
+  brother_id: string;
+  updated_at: string;
+};
+
+type RequiredFeedbackRow = {
+  id: string;
+  rushee_id: string;
+  brother_id: string;
+};
+
+type EventRow = {
+  id: string;
+  name: string;
+  date: string | null;
+  time: string | null;
+  type: string;
+};
+
+const defaultPhoto =
+  "https://images.unsplash.com/photo-1552053831-71594a27632d?w=500&h=500&fit=crop";
 
 const stages: RusheeStage[] = [
   "Hash #1",
@@ -72,15 +70,7 @@ const stages: RusheeStage[] = [
   "Archived",
 ];
 
-const defaultPhoto =
-  "https://images.unsplash.com/photo-1552053831-71594a27632d?w=500&h=500&fit=crop";
-
-function toArray<T>(value: T[] | T | null | undefined): T[] {
-  if (!value) return [];
-  return Array.isArray(value) ? value : [value];
-}
-
-function getStageStyle(stage: string) {
+function getStageStyle(stage: RusheeStage) {
   if (stage === "Bid / Accepted") return "bg-[#EAF3EA] text-[#1F6B3A]";
   if (stage === "Not Continuing") return "bg-[#F5E8EA] text-[#8A1F2D]";
   if (stage === "Archived") return "bg-slate-100 text-slate-600";
@@ -89,93 +79,23 @@ function getStageStyle(stage: string) {
   return "bg-[#F6F1E8] text-[#071E34]";
 }
 
-function getRusheeStage(rushee: RusheeRow): RusheeStage {
-  const decision = rushee.hash_decisions;
-
-  if (!decision) return "Hash #1";
-
-  if (Array.isArray(decision)) {
-    return decision[0]?.stage || "Hash #1";
-  }
-
-  return decision.stage || "Hash #1";
-}
-
-function getRusheeEventIds(rushee: RusheeRow) {
-  return toArray(rushee.rushee_events).map((item) => item.event_id);
-}
-
-function getRusheeEventNames(rushee: RusheeRow) {
-  return toArray(rushee.rushee_events)
-    .flatMap((item) => toArray(item.events))
-    .map((event) => event.name)
-    .filter(Boolean);
-}
-
-function getBrotherName(brothers: BrotherRow[], brotherId?: string | null) {
-  if (!brotherId) return "Unassigned";
-
-  return (
-    brothers.find((brother) => brother.id === brotherId)?.name || "Unassigned"
-  );
-}
-
-function getAssignedBrotherIds(rushee: RusheeRow) {
-  const multiAssignedIds = toArray(rushee.rushee_assignments).map(
-    (assignment) => assignment.brother_id
-  );
-
-  if (multiAssignedIds.length > 0) {
-    return multiAssignedIds;
-  }
-
-  return rushee.assigned_brother_id ? [rushee.assigned_brother_id] : [];
-}
-
-function getAssignedBrotherNames(rushee: RusheeRow, brotherList: BrotherRow[]) {
-  const assignedIds = getAssignedBrotherIds(rushee);
-
-  if (assignedIds.length === 0) {
-    return "Unassigned";
-  }
-
-  return assignedIds
-    .map((brotherId) => getBrotherName(brotherList, brotherId))
-    .join(", ");
-}
-
-export default function AdminRusheesPage() {
+export default function AdminDashboardPage() {
   const router = useRouter();
 
   const [currentBrother, setCurrentBrother] =
     useState<CurrentBrother | null>(null);
 
   const [rusheeList, setRusheeList] = useState<RusheeRow[]>([]);
+  const [hashDecisionList, setHashDecisionList] = useState<HashDecisionRow[]>(
+    []
+  );
+  const [feedbackList, setFeedbackList] = useState<FeedbackRow[]>([]);
+  const [requiredFeedbackList, setRequiredFeedbackList] = useState<
+    RequiredFeedbackRow[]
+  >([]);
   const [eventList, setEventList] = useState<EventRow[]>([]);
-  const [brotherList, setBrotherList] = useState<BrotherRow[]>([]);
-
-  const [editingId, setEditingId] = useState<string | null>(null);
-
-  const [number, setNumber] = useState("");
-  const [name, setName] = useState("");
-  const [major, setMajor] = useState("");
-  const [year, setYear] = useState("");
-  const [gender, setGender] = useState("");
-  const [photo, setPhoto] = useState("");
-  const [applicationSummary, setApplicationSummary] = useState("");
-  const [assignedBrotherIds, setAssignedBrotherIds] = useState<string[]>([]);
-  const [selectedStage, setSelectedStage] = useState<RusheeStage>("Hash #1");
-  const [selectedEventIds, setSelectedEventIds] = useState<string[]>([]);
-
-  const [search, setSearch] = useState("");
-  const [stageFilter, setStageFilter] = useState("All");
-  const [yearFilter, setYearFilter] = useState("All");
-  const [majorFilter, setMajorFilter] = useState("All");
-  const [genderFilter, setGenderFilter] = useState("All");
-  const [brotherFilter, setBrotherFilter] = useState("All");
 
   const [loading, setLoading] = useState(true);
-  const [saving, setSaving] = useState(false);
   const [errorMessage, setErrorMessage] = useState("");
 
   useEffect(() => {
@@ -191,20 +111,34 @@ export default function AdminRusheesPage() {
     }
 
     setCurrentBrother(admin);
-    await loadPageData();
+    await loadDashboard();
   }
 
-  async function loadPageData() {
+  async function loadDashboard() {
     try {
       setLoading(true);
       setErrorMessage("");
 
-      const [rusheesResponse, eventsResponse, brothersResponse] =
-        await Promise.all([
-          supabase
-            .from("rushees")
-            .select(
-              `
+      const [
+        rusheesResponse,
+        hashResponse,
+        feedbackResponse,
+        requiredResponse,
+        eventsResponse,
+      ] = await Promise.all([
+        supabase
+          .from("rushees")
+          .select("id, number, name, major, year, gender, photo, created_at")
+          .order("number", { ascending: true }),
+
+        supabase
+          .from("hash_decisions")
+          .select(
+            `
+            rushee_id,
+            stage,
+            updated_at,
+            rushees (
               id,
               number,
               name,
@@ -212,357 +146,82 @@ export default function AdminRusheesPage() {
               year,
               gender,
               photo,
-              application_summary,
-              assigned_brother_id,
-              rushee_assignments (
-                brother_id,
-                brothers (
-                  id,
-                  name,
-                  email,
-                  role
-                )
-              ),
-              rushee_events (
-                event_id,
-                events (
-                  id,
-                  name,
-                  date,
-                  time,
-                  type
-                )
-              ),
-              hash_decisions (
-                stage
-              )
-            `
+              created_at
             )
-            .order("number", { ascending: true }),
+          `
+          )
+          .order("updated_at", { ascending: false }),
 
-          supabase
-            .from("events")
-            .select("id, name, date, time, type")
-            .order("created_at", { ascending: true }),
+        supabase
+          .from("feedback")
+          .select("id, rushee_id, brother_id, updated_at")
+          .order("updated_at", { ascending: false }),
 
-          supabase
-            .from("brothers")
-            .select("id, name, email, role")
-            .order("name", { ascending: true }),
-        ]);
+        supabase
+          .from("required_feedback")
+          .select("id, rushee_id, brother_id"),
+
+        supabase
+          .from("events")
+          .select("id, name, date, time, type")
+          .order("created_at", { ascending: true }),
+      ]);
 
       if (rusheesResponse.error) throw rusheesResponse.error;
+      if (hashResponse.error) throw hashResponse.error;
+      if (feedbackResponse.error) throw feedbackResponse.error;
+      if (requiredResponse.error) throw requiredResponse.error;
       if (eventsResponse.error) throw eventsResponse.error;
-      if (brothersResponse.error) throw brothersResponse.error;
 
-      setRusheeList((rusheesResponse.data || []) as unknown as RusheeRow[]);
+      setRusheeList((rusheesResponse.data || []) as RusheeRow[]);
+      setHashDecisionList(
+        (hashResponse.data || []) as unknown as HashDecisionRow[]
+      );
+      setFeedbackList((feedbackResponse.data || []) as FeedbackRow[]);
+      setRequiredFeedbackList(
+        (requiredResponse.data || []) as RequiredFeedbackRow[]
+      );
       setEventList((eventsResponse.data || []) as EventRow[]);
-      setBrotherList((brothersResponse.data || []) as BrotherRow[]);
     } catch (error) {
       console.error(error);
-      setErrorMessage("Could not load rushees from Supabase.");
+      setErrorMessage("Could not load admin dashboard.");
     } finally {
       setLoading(false);
     }
   }
 
-  function resetForm() {
-    setEditingId(null);
-    setNumber("");
-    setName("");
-    setMajor("");
-    setYear("");
-    setGender("");
-    setPhoto("");
-    setApplicationSummary("");
-    setAssignedBrotherIds([]);
-    setSelectedStage("Hash #1");
-    setSelectedEventIds([]);
-    setErrorMessage("");
-  }
+  const stageByRusheeId = useMemo(() => {
+    const map: Record<string, RusheeStage> = {};
 
-  function startEditing(rushee: RusheeRow) {
-    setEditingId(rushee.id);
-    setNumber(String(rushee.number));
-    setName(rushee.name);
-    setMajor(rushee.major || "");
-    setYear(rushee.year || "");
-    setGender(rushee.gender || "");
-    setPhoto(rushee.photo || "");
-    setApplicationSummary(rushee.application_summary || "");
-    setAssignedBrotherIds(getAssignedBrotherIds(rushee));
-    setSelectedStage(getRusheeStage(rushee));
-    setSelectedEventIds(getRusheeEventIds(rushee));
-    setErrorMessage("");
-
-    window.scrollTo({
-      top: 0,
-      behavior: "smooth",
+    hashDecisionList.forEach((item) => {
+      map[item.rushee_id] = item.stage;
     });
-  }
 
-  function toggleEvent(eventId: string) {
-    if (selectedEventIds.includes(eventId)) {
-      setSelectedEventIds(selectedEventIds.filter((id) => id !== eventId));
-      return;
-    }
+    return map;
+  }, [hashDecisionList]);
 
-    setSelectedEventIds([...selectedEventIds, eventId]);
-  }
+  const counts = useMemo(() => {
+    const countForStage = (stage: RusheeStage) =>
+      rusheeList.filter(
+        (rushee) => (stageByRusheeId[rushee.id] || "Hash #1") === stage
+      ).length;
 
-  function toggleAssignedBrother(brotherId: string) {
-    if (assignedBrotherIds.includes(brotherId)) {
-      setAssignedBrotherIds(
-        assignedBrotherIds.filter((id) => id !== brotherId)
-      );
-      return;
-    }
+    return {
+      totalRushees: rusheeList.length,
+      hash1: countForStage("Hash #1"),
+      hash2: countForStage("Hash #2"),
+      hash3: countForStage("Hash #3"),
+      finalHash: countForStage("Final Hash #4"),
+      bid: countForStage("Bid / Accepted"),
+      notContinuing: countForStage("Not Continuing"),
+      archived: countForStage("Archived"),
+      feedback: feedbackList.length,
+      requiredFeedback: requiredFeedbackList.length,
+      events: eventList.length,
+    };
+  }, [rusheeList, stageByRusheeId, feedbackList, requiredFeedbackList, eventList]);
 
-    setAssignedBrotherIds([...assignedBrotherIds, brotherId]);
-  }
-
-  async function syncRusheeEvents(rusheeId: string) {
-    const { error: deleteError } = await supabase
-      .from("rushee_events")
-      .delete()
-      .eq("rushee_id", rusheeId);
-
-    if (deleteError) throw deleteError;
-
-    if (selectedEventIds.length === 0) return;
-
-    const rows = selectedEventIds.map((eventId) => ({
-      rushee_id: rusheeId,
-      event_id: eventId,
-    }));
-
-    const { error: insertError } = await supabase
-      .from("rushee_events")
-      .insert(rows);
-
-    if (insertError) throw insertError;
-  }
-
-  async function syncRusheeAssignments(rusheeId: string) {
-    const { error: deleteError } = await supabase
-      .from("rushee_assignments")
-      .delete()
-      .eq("rushee_id", rusheeId);
-
-    if (deleteError) throw deleteError;
-
-    if (assignedBrotherIds.length === 0) return;
-
-    const rows = assignedBrotherIds.map((brotherId) => ({
-      rushee_id: rusheeId,
-      brother_id: brotherId,
-    }));
-
-    const { error: insertError } = await supabase
-      .from("rushee_assignments")
-      .insert(rows);
-
-    if (insertError) throw insertError;
-  }
-
-  async function syncHashDecision(rusheeId: string) {
-    const { error } = await supabase.from("hash_decisions").upsert(
-      {
-        rushee_id: rusheeId,
-        stage: selectedStage,
-        updated_at: new Date().toISOString(),
-      },
-      {
-        onConflict: "rushee_id",
-      }
-    );
-
-    if (error) throw error;
-  }
-
-  async function saveRushee() {
-    const trimmedName = name.trim();
-    const parsedNumber = Number(number);
-
-    if (!trimmedName) {
-      setErrorMessage("Name is required.");
-      return;
-    }
-
-    if (!parsedNumber || parsedNumber < 1) {
-      setErrorMessage("Rush number must be a positive number.");
-      return;
-    }
-
-    try {
-      setSaving(true);
-      setErrorMessage("");
-
-      const payload = {
-        number: parsedNumber,
-        name: trimmedName,
-        major,
-        year,
-        gender,
-        photo: photo || defaultPhoto,
-        application_summary: applicationSummary,
-        assigned_brother_id: assignedBrotherIds[0] || null,
-      };
-
-      let rusheeId = editingId;
-
-      if (editingId) {
-        const { error } = await supabase
-          .from("rushees")
-          .update(payload)
-          .eq("id", editingId);
-
-        if (error) throw error;
-      } else {
-        const { data, error } = await supabase
-          .from("rushees")
-          .insert(payload)
-          .select("id")
-          .single();
-
-        if (error) throw error;
-
-        rusheeId = data.id;
-      }
-
-      if (!rusheeId) {
-        throw new Error("No rushee ID found after save.");
-      }
-
-      await syncRusheeEvents(rusheeId);
-      await syncRusheeAssignments(rusheeId);
-      await syncHashDecision(rusheeId);
-
-      resetForm();
-      await loadPageData();
-    } catch (error) {
-      console.error(error);
-      setErrorMessage(
-        "Could not save rushee. Check duplicate rush numbers or permissions."
-      );
-    } finally {
-      setSaving(false);
-    }
-  }
-
-  async function deleteRushee(rushee: RusheeRow) {
-    const confirmed = window.confirm(
-      `Delete #${rushee.number} ${rushee.name}? This will remove their events, feedback, assignments, and hash decision.`
-    );
-
-    if (!confirmed) return;
-
-    try {
-      setSaving(true);
-      setErrorMessage("");
-
-      const { error } = await supabase
-        .from("rushees")
-        .delete()
-        .eq("id", rushee.id);
-
-      if (error) throw error;
-
-      if (editingId === rushee.id) {
-        resetForm();
-      }
-
-      await loadPageData();
-    } catch (error) {
-      console.error(error);
-      setErrorMessage("Could not delete rushee.");
-    } finally {
-      setSaving(false);
-    }
-  }
-
-  async function quickUpdateStage(rusheeId: string, stage: RusheeStage) {
-    try {
-      const { error } = await supabase.from("hash_decisions").upsert(
-        {
-          rushee_id: rusheeId,
-          stage,
-          updated_at: new Date().toISOString(),
-        },
-        {
-          onConflict: "rushee_id",
-        }
-      );
-
-      if (error) throw error;
-
-      await loadPageData();
-    } catch (error) {
-      console.error(error);
-      setErrorMessage("Could not update stage.");
-    }
-  }
-
-  const yearOptions = useMemo(() => {
-    return Array.from(
-      new Set(rusheeList.map((rushee) => rushee.year || "").filter(Boolean))
-    ).sort();
-  }, [rusheeList]);
-
-  const majorOptions = useMemo(() => {
-    return Array.from(
-      new Set(rusheeList.map((rushee) => rushee.major || "").filter(Boolean))
-    ).sort();
-  }, [rusheeList]);
-
-  const genderOptions = useMemo(() => {
-    return Array.from(
-      new Set(rusheeList.map((rushee) => rushee.gender || "").filter(Boolean))
-    ).sort();
-  }, [rusheeList]);
-
-  const filteredRushees = useMemo(() => {
-    return rusheeList.filter((rushee) => {
-      const stage = getRusheeStage(rushee);
-      const eventNames = getRusheeEventNames(rushee).join(" ");
-      const assignedIds = getAssignedBrotherIds(rushee);
-      const query = search.toLowerCase();
-
-      const matchesSearch =
-        rushee.name.toLowerCase().includes(query) ||
-        String(rushee.number).includes(query) ||
-        (rushee.major || "").toLowerCase().includes(query) ||
-        (rushee.year || "").toLowerCase().includes(query) ||
-        (rushee.gender || "").toLowerCase().includes(query) ||
-        eventNames.toLowerCase().includes(query);
-
-      if (!matchesSearch) return false;
-      if (stageFilter !== "All" && stage !== stageFilter) return false;
-      if (yearFilter !== "All" && rushee.year !== yearFilter) return false;
-      if (majorFilter !== "All" && rushee.major !== majorFilter) return false;
-      if (genderFilter !== "All" && rushee.gender !== genderFilter) {
-        return false;
-      }
-
-      if (brotherFilter !== "All") {
-        if (brotherFilter === "") {
-          if (assignedIds.length > 0) return false;
-        } else if (!assignedIds.includes(brotherFilter)) {
-          return false;
-        }
-      }
-
-      return true;
-    });
-  }, [
-    rusheeList,
-    search,
-    stageFilter,
-    yearFilter,
-    majorFilter,
-    genderFilter,
-    brotherFilter,
-  ]);
+  const recentHashChanges = hashDecisionList.slice(0, 5);
 
   if (loading || !currentBrother) {
     return (
@@ -571,7 +230,7 @@ export default function AdminRusheesPage() {
 
         <section className="mx-auto max-w-3xl px-4 py-20">
           <div className="rounded-3xl border border-[#E5DDD0] bg-white p-6 text-sm text-slate-600">
-            Loading rushees...
+            Loading dashboard...
           </div>
         </section>
       </main>
@@ -579,7 +238,7 @@ export default function AdminRusheesPage() {
   }
 
   return (
-    <main className="min-h-screen bg-[#F6F1E8] text-[#071E34]">
+    <main className="min-h-screen bg-[#F6F1E8] pb-20 text-[#071E34]">
       <AdminNav />
 
       <header className="bg-[#071E34] px-6 py-12 text-white">
@@ -588,318 +247,129 @@ export default function AdminRusheesPage() {
             Admin
           </p>
 
-          <h1 className="mt-4 text-5xl font-black tracking-tight">Rushees</h1>
+          <h1 className="mt-4 text-5xl font-black tracking-tight">
+            Dashboard
+          </h1>
 
           <p className="mt-4 max-w-3xl text-lg leading-8 text-white/70">
-            Manage the rush roster, assign events, set categories, and assign
-            one or more brothers to specific rushees.
+            Overview for rush progress, feedback coverage, events, and hash
+            movement.
           </p>
         </section>
       </header>
 
-      <section className="mx-auto grid max-w-7xl gap-6 px-4 py-8 xl:grid-cols-[0.85fr_1.15fr]">
-        <aside className="rounded-3xl border border-[#E5DDD0] bg-white p-6 shadow-sm">
-          <div className="flex items-start justify-between gap-4">
-            <div>
-              <h2 className="text-2xl font-black">
-                {editingId ? "Edit Rushee" : "Add Rushee"}
-              </h2>
+      <section className="mx-auto max-w-7xl px-4 py-8">
+        {errorMessage && (
+          <p className="mb-6 rounded-2xl bg-[#F5E8EA] p-4 text-sm font-bold text-[#8A1F2D]">
+            {errorMessage}
+          </p>
+        )}
 
-              {editingId && (
-                <p className="mt-2 w-fit rounded-full bg-[#FFF7E6] px-4 py-2 text-xs font-bold text-[#8A6500]">
-                  Editing mode
+        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+          <a
+            href="/admin/rushees"
+            className="rounded-3xl border border-[#E5DDD0] bg-white p-6 shadow-sm transition hover:-translate-y-0.5 hover:shadow-md"
+          >
+            <p className="text-sm text-slate-500">Total Rushees</p>
+            <p className="mt-2 text-4xl font-black">{counts.totalRushees}</p>
+            <p className="mt-3 text-sm font-bold text-[#071E34]">
+              Manage rushees →
+            </p>
+          </a>
+
+          <a
+            href="/admin/feedback"
+            className="rounded-3xl border border-[#E5DDD0] bg-white p-6 shadow-sm transition hover:-translate-y-0.5 hover:shadow-md"
+          >
+            <p className="text-sm text-slate-500">Feedback Notes</p>
+            <p className="mt-2 text-4xl font-black">{counts.feedback}</p>
+            <p className="mt-3 text-sm font-bold text-[#071E34]">
+              View feedback →
+            </p>
+          </a>
+
+          <a
+            href="/admin/rushees"
+            className="rounded-3xl border border-[#E5DDD0] bg-white p-6 shadow-sm transition hover:-translate-y-0.5 hover:shadow-md"
+          >
+            <p className="text-sm text-slate-500">Required Feedback Rows</p>
+            <p className="mt-2 text-4xl font-black">
+              {counts.requiredFeedback}
+            </p>
+            <p className="mt-3 text-sm font-bold text-[#071E34]">
+              Assign required →
+            </p>
+          </a>
+
+          <a
+            href="/admin/events"
+            className="rounded-3xl border border-[#E5DDD0] bg-white p-6 shadow-sm transition hover:-translate-y-0.5 hover:shadow-md"
+          >
+            <p className="text-sm text-slate-500">Events</p>
+            <p className="mt-2 text-4xl font-black">{counts.events}</p>
+            <p className="mt-3 text-sm font-bold text-[#071E34]">
+              Manage events →
+            </p>
+          </a>
+        </div>
+
+        <div className="mt-6 grid gap-4 md:grid-cols-3 lg:grid-cols-7">
+          {[
+            ["Hash #1", counts.hash1],
+            ["Hash #2", counts.hash2],
+            ["Hash #3", counts.hash3],
+            ["Final", counts.finalHash],
+            ["Bid", counts.bid],
+            ["Not Continuing", counts.notContinuing],
+            ["Archived", counts.archived],
+          ].map(([label, count]) => (
+            <a
+              key={String(label)}
+              href="/admin/hash"
+              className="rounded-3xl border border-[#E5DDD0] bg-white p-5 text-center shadow-sm transition hover:-translate-y-0.5 hover:shadow-md"
+            >
+              <p className="text-sm text-slate-500">{label}</p>
+              <p className="mt-2 text-3xl font-black">{count}</p>
+            </a>
+          ))}
+        </div>
+
+        <div className="mt-8 grid gap-6 lg:grid-cols-[1fr_0.8fr]">
+          <section className="rounded-3xl border border-[#E5DDD0] bg-white p-6 shadow-sm">
+            <div className="flex items-center justify-between gap-4">
+              <div>
+                <h2 className="text-2xl font-black">Recent Hash Movement</h2>
+                <p className="mt-1 text-sm text-slate-500">
+                  Latest rushees moved between stages.
+                </p>
+              </div>
+
+              <a
+                href="/admin/hash"
+                className="rounded-full bg-[#071E34] px-5 py-2 text-sm font-bold text-[#F6F1E8]"
+              >
+                Open Hash
+              </a>
+            </div>
+
+            <div className="mt-5 space-y-3">
+              {recentHashChanges.length === 0 && (
+                <p className="rounded-2xl bg-[#F6F1E8] p-4 text-sm text-slate-600">
+                  No hash movements yet.
                 </p>
               )}
-            </div>
 
-            {editingId && (
-              <button
-                type="button"
-                onClick={resetForm}
-                disabled={saving}
-                className="rounded-full border border-[#071E34] px-4 py-2 text-sm font-bold text-[#071E34] disabled:opacity-50"
-              >
-                Cancel
-              </button>
-            )}
-          </div>
+              {recentHashChanges.map((item) => {
+                const rushee = item.rushees;
 
-          {errorMessage && (
-            <p className="mt-5 rounded-2xl bg-[#F5E8EA] p-4 text-sm font-bold text-[#8A1F2D]">
-              {errorMessage}
-            </p>
-          )}
+                if (!rushee) return null;
 
-          <div className="mt-6 grid gap-4">
-            <div className="grid gap-4 sm:grid-cols-[0.5fr_1.5fr]">
-              <label className="text-sm font-bold">
-                Rush #
-                <input
-                  value={number}
-                  onChange={(event) => setNumber(event.target.value)}
-                  placeholder="1"
-                  className="mt-2 w-full rounded-2xl border border-[#E5DDD0] bg-white px-4 py-3 text-sm font-normal outline-none"
-                />
-              </label>
-
-              <label className="text-sm font-bold">
-                Name
-                <input
-                  value={name}
-                  onChange={(event) => setName(event.target.value)}
-                  placeholder="Full name"
-                  className="mt-2 w-full rounded-2xl border border-[#E5DDD0] bg-white px-4 py-3 text-sm font-normal outline-none"
-                />
-              </label>
-            </div>
-
-            <div className="grid gap-4 sm:grid-cols-3">
-              <label className="text-sm font-bold">
-                Major
-                <input
-                  value={major}
-                  onChange={(event) => setMajor(event.target.value)}
-                  placeholder="Computer Science"
-                  className="mt-2 w-full rounded-2xl border border-[#E5DDD0] bg-white px-4 py-3 text-sm font-normal outline-none"
-                />
-              </label>
-
-              <label className="text-sm font-bold">
-                Year / Grade
-                <input
-                  value={year}
-                  onChange={(event) => setYear(event.target.value)}
-                  placeholder="Sophomore"
-                  className="mt-2 w-full rounded-2xl border border-[#E5DDD0] bg-white px-4 py-3 text-sm font-normal outline-none"
-                />
-              </label>
-
-              <label className="text-sm font-bold">
-                Gender
-                <input
-                  value={gender}
-                  onChange={(event) => setGender(event.target.value)}
-                  placeholder="Optional"
-                  className="mt-2 w-full rounded-2xl border border-[#E5DDD0] bg-white px-4 py-3 text-sm font-normal outline-none"
-                />
-              </label>
-            </div>
-
-            <label className="text-sm font-bold">
-              Photo URL
-              <input
-                value={photo}
-                onChange={(event) => setPhoto(event.target.value)}
-                placeholder="https://..."
-                className="mt-2 w-full rounded-2xl border border-[#E5DDD0] bg-white px-4 py-3 text-sm font-normal outline-none"
-              />
-            </label>
-
-            <label className="text-sm font-bold">
-              Application Summary
-              <textarea
-                value={applicationSummary}
-                onChange={(event) => setApplicationSummary(event.target.value)}
-                placeholder="Short summary from the application..."
-                className="mt-2 min-h-28 w-full rounded-2xl border border-[#E5DDD0] bg-white px-4 py-3 text-sm font-normal outline-none"
-              />
-            </label>
-
-            <label className="text-sm font-bold">
-              Stage
-              <select
-                value={selectedStage}
-                onChange={(event) =>
-                  setSelectedStage(event.target.value as RusheeStage)
-                }
-                className="mt-2 w-full rounded-2xl border border-[#E5DDD0] bg-white px-4 py-3 text-sm font-normal outline-none"
-              >
-                {stages.map((stage) => (
-                  <option key={stage}>{stage}</option>
-                ))}
-              </select>
-            </label>
-
-            <div>
-              <p className="text-sm font-bold">Assigned Brothers</p>
-
-              <div className="mt-3 grid max-h-72 gap-2 overflow-y-auto rounded-2xl border border-[#E5DDD0] p-3">
-                {brotherList.map((brother) => {
-                  const selected = assignedBrotherIds.includes(brother.id);
-
-                  return (
-                    <button
-                      key={brother.id}
-                      type="button"
-                      onClick={() => toggleAssignedBrother(brother.id)}
-                      className={`rounded-2xl border px-4 py-3 text-left text-sm font-bold ${
-                        selected
-                          ? "border-[#071E34] bg-[#071E34] text-[#F6F1E8]"
-                          : "border-[#E5DDD0] bg-white text-[#071E34] hover:bg-[#F6F1E8]"
-                      }`}
-                    >
-                      {selected ? "✓ " : ""}
-                      {brother.name}
-                    </button>
-                  );
-                })}
-              </div>
-            </div>
-
-            <div>
-              <p className="text-sm font-bold">Events Attended</p>
-
-              <div className="mt-3 flex flex-wrap gap-2">
-                {eventList.map((event) => {
-                  const selected = selectedEventIds.includes(event.id);
-
-                  return (
-                    <button
-                      key={event.id}
-                      type="button"
-                      onClick={() => toggleEvent(event.id)}
-                      className={`rounded-full border px-4 py-2 text-sm font-bold ${
-                        selected
-                          ? "border-[#071E34] bg-[#071E34] text-[#F6F1E8]"
-                          : "border-[#071E34] bg-white text-[#071E34] hover:bg-[#F6F1E8]"
-                      }`}
-                    >
-                      {selected ? "✓ " : ""}
-                      {event.name}
-                    </button>
-                  );
-                })}
-              </div>
-            </div>
-
-            <button
-              type="button"
-              onClick={saveRushee}
-              disabled={saving}
-              className="rounded-2xl bg-[#071E34] px-5 py-4 text-sm font-bold text-[#F6F1E8] disabled:opacity-50"
-            >
-              {saving
-                ? "Saving..."
-                : editingId
-                ? "Save Changes"
-                : "Add Rushee"}
-            </button>
-          </div>
-        </aside>
-
-        <section>
-          <div className="rounded-3xl border border-[#E5DDD0] bg-white p-5 shadow-sm">
-            <div className="grid gap-4 lg:grid-cols-3">
-              <label className="text-sm font-bold lg:col-span-3">
-                Search
-                <input
-                  value={search}
-                  onChange={(event) => setSearch(event.target.value)}
-                  placeholder="Search name, number, major, year, event..."
-                  className="mt-2 w-full rounded-2xl border border-[#E5DDD0] bg-white px-4 py-3 text-sm font-normal outline-none"
-                />
-              </label>
-
-              <label className="text-sm font-bold">
-                Stage
-                <select
-                  value={stageFilter}
-                  onChange={(event) => setStageFilter(event.target.value)}
-                  className="mt-2 w-full rounded-2xl border border-[#E5DDD0] bg-white px-4 py-3 text-sm font-normal outline-none"
-                >
-                  <option>All</option>
-                  {stages.map((stage) => (
-                    <option key={stage}>{stage}</option>
-                  ))}
-                </select>
-              </label>
-
-              <label className="text-sm font-bold">
-                Year
-                <select
-                  value={yearFilter}
-                  onChange={(event) => setYearFilter(event.target.value)}
-                  className="mt-2 w-full rounded-2xl border border-[#E5DDD0] bg-white px-4 py-3 text-sm font-normal outline-none"
-                >
-                  <option>All</option>
-                  {yearOptions.map((yearOption) => (
-                    <option key={yearOption}>{yearOption}</option>
-                  ))}
-                </select>
-              </label>
-
-              <label className="text-sm font-bold">
-                Major
-                <select
-                  value={majorFilter}
-                  onChange={(event) => setMajorFilter(event.target.value)}
-                  className="mt-2 w-full rounded-2xl border border-[#E5DDD0] bg-white px-4 py-3 text-sm font-normal outline-none"
-                >
-                  <option>All</option>
-                  {majorOptions.map((majorOption) => (
-                    <option key={majorOption}>{majorOption}</option>
-                  ))}
-                </select>
-              </label>
-
-              <label className="text-sm font-bold">
-                Gender
-                <select
-                  value={genderFilter}
-                  onChange={(event) => setGenderFilter(event.target.value)}
-                  className="mt-2 w-full rounded-2xl border border-[#E5DDD0] bg-white px-4 py-3 text-sm font-normal outline-none"
-                >
-                  <option>All</option>
-                  {genderOptions.map((genderOption) => (
-                    <option key={genderOption}>{genderOption}</option>
-                  ))}
-                </select>
-              </label>
-
-              <label className="text-sm font-bold">
-                Assigned Brother
-                <select
-                  value={brotherFilter}
-                  onChange={(event) => setBrotherFilter(event.target.value)}
-                  className="mt-2 w-full rounded-2xl border border-[#E5DDD0] bg-white px-4 py-3 text-sm font-normal outline-none"
-                >
-                  <option>All</option>
-                  <option value="">Unassigned</option>
-                  {brotherList.map((brother) => (
-                    <option key={brother.id} value={brother.id}>
-                      {brother.name}
-                    </option>
-                  ))}
-                </select>
-              </label>
-
-              <div className="rounded-2xl bg-[#F6F1E8] p-4">
-                <p className="text-sm text-slate-500">Showing</p>
-                <p className="mt-1 text-3xl font-black">
-                  {filteredRushees.length}
-                </p>
-              </div>
-            </div>
-          </div>
-
-          <div className="mt-6 space-y-4">
-            {filteredRushees.length === 0 && (
-              <p className="rounded-3xl border border-[#E5DDD0] bg-white p-6 text-sm text-slate-600 shadow-sm">
-                No rushees match this view.
-              </p>
-            )}
-
-            {filteredRushees.map((rushee) => {
-              const stage = getRusheeStage(rushee);
-              const eventNames = getRusheeEventNames(rushee);
-
-              return (
-                <article
-                  key={rushee.id}
-                  className="rounded-3xl border border-[#E5DDD0] bg-white p-5 shadow-sm"
-                >
-                  <div className="grid gap-5 lg:grid-cols-[8rem_1fr]">
-                    <div className="h-40 w-full overflow-hidden rounded-3xl bg-[#F0E8DA] lg:h-32 lg:w-32">
+                return (
+                  <article
+                    key={item.rushee_id}
+                    className="flex items-center gap-4 rounded-2xl border border-[#E5DDD0] p-4"
+                  >
+                    <div className="h-16 w-16 overflow-hidden rounded-2xl bg-[#F0E8DA]">
                       <img
                         src={rushee.photo || defaultPhoto}
                         alt={rushee.name}
@@ -907,98 +377,75 @@ export default function AdminRusheesPage() {
                       />
                     </div>
 
-                    <div>
-                      <div className="flex flex-col gap-4 xl:flex-row xl:items-start xl:justify-between">
-                        <div>
-                          <div className="flex flex-wrap items-center gap-2">
-                            <h3 className="text-2xl font-black">
-                              #{rushee.number} {rushee.name}
-                            </h3>
-
-                            <span
-                              className={`rounded-full px-3 py-1 text-xs font-bold ${getStageStyle(
-                                stage
-                              )}`}
-                            >
-                              {stage}
-                            </span>
-                          </div>
-
-                          <p className="mt-2 text-sm text-slate-600">
-                            {rushee.major || "No major"} ·{" "}
-                            {rushee.year || "No year"}
-                            {rushee.gender ? ` · ${rushee.gender}` : ""}
-                          </p>
-
-                          <p className="mt-2 text-sm text-slate-600">
-                            Assigned:{" "}
-                            <span className="font-bold text-[#071E34]">
-                              {getAssignedBrotherNames(rushee, brotherList)}
-                            </span>
-                          </p>
-
-                          <p className="mt-3 text-sm leading-6 text-slate-600">
-                            Events:{" "}
-                            {eventNames.length > 0
-                              ? eventNames.join(", ")
-                              : "No events yet"}
-                          </p>
-                        </div>
-
-                        <div className="flex flex-wrap gap-2">
-                          <button
-                            type="button"
-                            onClick={() => startEditing(rushee)}
-                            disabled={saving}
-                            className="rounded-full border border-[#071E34] px-5 py-2 text-sm font-bold text-[#071E34] disabled:opacity-50"
-                          >
-                            Edit
-                          </button>
-
-                          <a
-                            href={`/admin/rushees/${rushee.id}`}
-                            className="rounded-full border border-[#071E34] px-5 py-2 text-sm font-bold text-[#071E34]"
-                          >
-                            Profile
-                          </a>
-
-                          <button
-                            type="button"
-                            onClick={() => deleteRushee(rushee)}
-                            disabled={saving}
-                            className="rounded-full border border-[#8A1F2D] px-5 py-2 text-sm font-bold text-[#8A1F2D] disabled:opacity-50"
-                          >
-                            Delete
-                          </button>
-                        </div>
-                      </div>
-
-                      <div className="mt-4">
-                        <label className="text-sm font-bold">
-                          Quick Stage
-                          <select
-                            value={stage}
-                            onChange={(event) =>
-                              quickUpdateStage(
-                                rushee.id,
-                                event.target.value as RusheeStage
-                              )
-                            }
-                            className="mt-2 w-full rounded-2xl border border-[#E5DDD0] bg-white px-4 py-3 text-sm font-normal outline-none"
-                          >
-                            {stages.map((stageOption) => (
-                              <option key={stageOption}>{stageOption}</option>
-                            ))}
-                          </select>
-                        </label>
-                      </div>
+                    <div className="min-w-0 flex-1">
+                      <p className="font-black">
+                        #{rushee.number} {rushee.name}
+                      </p>
+                      <p className="mt-1 text-sm text-slate-500">
+                        {rushee.major || "No major"} ·{" "}
+                        {rushee.year || "No year"}
+                      </p>
                     </div>
-                  </div>
-                </article>
-              );
-            })}
-          </div>
-        </section>
+
+                    <span
+                      className={`rounded-full px-3 py-1 text-xs font-bold ${getStageStyle(
+                        item.stage
+                      )}`}
+                    >
+                      {item.stage}
+                    </span>
+                  </article>
+                );
+              })}
+            </div>
+          </section>
+
+          <section className="rounded-3xl border border-[#E5DDD0] bg-white p-6 shadow-sm">
+            <h2 className="text-2xl font-black">Quick Actions</h2>
+
+            <div className="mt-5 grid gap-3">
+              <a
+                href="/admin/rushees"
+                className="rounded-2xl border border-[#E5DDD0] bg-[#F6F1E8] px-5 py-4 text-sm font-bold text-[#071E34]"
+              >
+                Add or edit rushees
+              </a>
+
+              <a
+                href="/admin/events"
+                className="rounded-2xl border border-[#E5DDD0] bg-[#F6F1E8] px-5 py-4 text-sm font-bold text-[#071E34]"
+              >
+                Manage events
+              </a>
+
+              <a
+                href="/admin/feedback"
+                className="rounded-2xl border border-[#E5DDD0] bg-[#F6F1E8] px-5 py-4 text-sm font-bold text-[#071E34]"
+              >
+                Review all feedback
+              </a>
+
+              <a
+                href="/admin/hash"
+                className="rounded-2xl border border-[#E5DDD0] bg-[#F6F1E8] px-5 py-4 text-sm font-bold text-[#071E34]"
+              >
+                Open Rush Decisions
+              </a>
+
+              <a
+                href="/admin/archive"
+                className="rounded-2xl border border-[#E5DDD0] bg-[#F6F1E8] px-5 py-4 text-sm font-bold text-[#071E34]"
+              >
+                View archive
+              </a>
+            </div>
+
+            <p className="mt-5 rounded-2xl bg-[#FFF7E6] p-4 text-sm leading-6 text-[#8A6500]">
+              Add/edit rushees only from the Rushees page. The dashboard is just
+              for overview and navigation.
+            </p>
+          </section>
+        </div>
       </section>
     </main>
   );
