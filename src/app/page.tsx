@@ -7,7 +7,7 @@ import { supabase } from "@/lib/supabase";
 export default function Home() {
   const router = useRouter();
 
-  const [email, setEmail] = useState("eatluri@umich.edu");
+  const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
   const [errorMessage, setErrorMessage] = useState("");
@@ -91,7 +91,7 @@ export default function Home() {
                 <input
                   value={email}
                   onChange={(event) => setEmail(event.target.value)}
-                  placeholder="eatluri@umich.edu"
+                  placeholder="Enter your UMich email"
                   className="mt-2 w-full rounded-2xl border border-[#E5DDD0] bg-white px-4 py-4 text-base font-normal outline-none"
                 />
               </label>
