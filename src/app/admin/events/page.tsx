@@ -175,7 +175,7 @@ export default function AdminEventsPage() {
           <h1 className="mt-4 text-5xl font-black tracking-tight">Events</h1>
 
           <p className="mt-4 max-w-3xl text-lg leading-8 text-white/70">
-            Edit rush events and assign brothers to cover each event.
+          
           </p>
         </section>
       </header>

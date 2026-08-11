@@ -252,8 +252,6 @@ export default function AdminDashboardPage() {
           </h1>
 
           <p className="mt-4 max-w-3xl text-lg leading-8 text-white/70">
-            Overview for rush progress, feedback coverage, events, and hash
-            movement.
           </p>
         </section>
       </header>
@@ -292,7 +290,7 @@ export default function AdminDashboardPage() {
             href="/admin/rushees"
             className="rounded-3xl border border-[#E5DDD0] bg-white p-6 shadow-sm transition hover:-translate-y-0.5 hover:shadow-md"
           >
-            <p className="text-sm text-slate-500">Required Feedback Rows</p>
+            <p className="text-sm text-slate-500">Feedback Assign</p>
             <p className="mt-2 text-4xl font-black">
               {counts.requiredFeedback}
             </p>
@@ -340,7 +338,7 @@ export default function AdminDashboardPage() {
               <div>
                 <h2 className="text-2xl font-black">Recent Hash Movement</h2>
                 <p className="mt-1 text-sm text-slate-500">
-                  Latest rushees moved between stages.
+                  
                 </p>
               </div>
 
@@ -440,10 +438,6 @@ export default function AdminDashboardPage() {
               </a>
             </div>
 
-            <p className="mt-5 rounded-2xl bg-[#FFF7E6] p-4 text-sm leading-6 text-[#8A6500]">
-              Add/edit rushees only from the Rushees page. The dashboard is just
-              for overview and navigation.
-            </p>
           </section>
         </div>
       </section>

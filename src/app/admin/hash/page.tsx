@@ -614,8 +614,7 @@ export default function AdminHashPage() {
           </h1>
 
           <p className="mt-4 max-w-3xl text-lg leading-8 text-white/70">
-            Clean hash view for moving rushees through rounds, bid, not
-            continuing, and archive.
+            Hash Voting
           </p>
         </section>
       </header>

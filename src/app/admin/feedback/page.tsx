@@ -358,7 +358,7 @@ export default function AdminFeedbackPage() {
           </h1>
 
           <p className="mt-4 max-w-3xl text-lg leading-8 text-white/70">
-            Review all brother notes, ratings, selected events, and comments.
+            
           </p>
         </section>
       </header>

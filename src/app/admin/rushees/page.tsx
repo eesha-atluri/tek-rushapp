@@ -768,8 +768,7 @@ export default function AdminRusheesPage() {
           <h1 className="mt-4 text-5xl font-black tracking-tight">Rushees</h1>
 
           <p className="mt-4 max-w-3xl text-lg leading-8 text-white/70">
-            Manage rushees, events attended, hash stage, and required feedback
-            brothers.
+            Manage/Edit rushees
           </p>
         </section>
       </header>
