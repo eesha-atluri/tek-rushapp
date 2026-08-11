@@ -1,114 +1,319 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { feedback } from "@/lib/mockData";
+import { useRouter } from "next/navigation";
 import BrotherNav from "@/app/components/BrotherNav";
+import { supabase } from "@/lib/supabase";
+import {
+  getCurrentBrotherProfile,
+  type CurrentBrother,
+} from "@/lib/backend/currentBrother";
 
-type SavedFeedback = {
+type EventRow = {
   id: string;
-  rusheeId: string;
-  rusheeName: string;
-  rusheeNumber: number;
-  events: string[];
-  communication: number;
-  passion: number;
-  cultureFit: number;
-  fitAddChoice: string;
-  fitAddScore: number;
-  comment: string;
+  name: string;
+  date: string | null;
+  time: string | null;
+  type: string;
 };
 
+type FeedbackEventRow = {
+  events: EventRow | null;
+};
+
+type RusheeRow = {
+  id: string;
+  number: number;
+  name: string;
+  major: string | null;
+  year: string | null;
+  gender: string | null;
+  photo: string | null;
+};
+
+type FeedbackRow = {
+  id: string;
+  rushee_id: string;
+  brother_id: string;
+  communication: number;
+  passion: number;
+  culture_fit: number;
+  fit_add_choice: "Fit" | "Add" | "Neither";
+  fit_add_score: number;
+  comment: string | null;
+  created_at: string;
+  updated_at: string;
+  rushees: RusheeRow | null;
+  feedback_events?: FeedbackEventRow[];
+};
+
+const defaultPhoto =
+  "https://images.unsplash.com/photo-1552053831-71594a27632d?w=500&h=500&fit=crop";
+
+function getFeedbackEvents(item: FeedbackRow) {
+  return (
+    item.feedback_events
+      ?.map((eventItem) => eventItem.events)
+      .filter((event): event is EventRow => Boolean(event)) || []
+  );
+}
+
 export default function MyFeedbackPage() {
-  const [myFeedback, setMyFeedback] = useState<SavedFeedback[]>([]);
+  const router = useRouter();
+
+  const [currentBrother, setCurrentBrother] =
+    useState<CurrentBrother | null>(null);
+
+  const [myFeedback, setMyFeedback] = useState<FeedbackRow[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [errorMessage, setErrorMessage] = useState("");
 
   useEffect(() => {
-    const savedFeedbackString = localStorage.getItem("tek-feedback");
-
-    const savedFeedback: SavedFeedback[] = savedFeedbackString
-      ? JSON.parse(savedFeedbackString)
-      : feedback;
-
-    setMyFeedback(savedFeedback);
+    loadMyFeedback();
   }, []);
 
-  return (
-    <main className="min-h-screen bg-[#F4F1EA] pb-20 text-[#061A33]">
+  async function loadMyFeedback() {
+    try {
+      setLoading(true);
+      setErrorMessage("");
+
+      const brother = await getCurrentBrotherProfile();
+
+      if (!brother) {
+        router.push("/");
+        return;
+      }
+
+      setCurrentBrother(brother);
+
+      const { data, error } = await supabase
+        .from("feedback")
+        .select(
+          `
+          id,
+          rushee_id,
+          brother_id,
+          communication,
+          passion,
+          culture_fit,
+          fit_add_choice,
+          fit_add_score,
+          comment,
+          created_at,
+          updated_at,
+          rushees (
+            id,
+            number,
+            name,
+            major,
+            year,
+            gender,
+            photo
+          ),
+          feedback_events (
+            events (
+              id,
+              name,
+              date,
+              time,
+              type
+            )
+          )
+        `
+        )
+        .eq("brother_id", brother.id)
+        .order("updated_at", { ascending: false });
+
+      if (error) {
+        throw error;
+      }
+
+      setMyFeedback((data || []) as unknown as FeedbackRow[]);
+    } catch (error) {
+      console.error(error);
+      setErrorMessage("Could not load your notes.");
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  if (loading || !currentBrother) {
+    return (
+      <main className="min-h-screen bg-[#F6F1E8] text-[#071E34]">
         <BrotherNav />
-      <header className="bg-[#061A33] px-5 py-5 text-white">
-        <a href="/rushees" className="text-sm font-semibold text-[#C49A45]">
-          ← Back to Rushees
-        </a>
 
-        <h1 className="mt-2 text-2xl font-extrabold">My Feedback</h1>
+        <section className="mx-auto max-w-3xl px-4 py-20">
+          <div className="rounded-3xl border border-[#E5DDD0] bg-white p-6 text-sm text-slate-600">
+            Loading your notes...
+          </div>
+        </section>
+      </main>
+    );
+  }
 
-        <p className="mt-2 text-sm text-slate-300">
-          View and edit feedback you have already submitted.
-        </p>
+  return (
+    <main className="min-h-screen bg-[#F6F1E8] pb-20 text-[#071E34]">
+      <BrotherNav />
+
+      <header className="bg-[#071E34] px-6 py-12 text-white">
+        <section className="mx-auto max-w-7xl">
+          <p className="text-sm font-bold uppercase tracking-[0.35em] text-[#C69A3D]">
+            Brother View
+          </p>
+
+          <h1 className="mt-4 text-5xl font-black tracking-tight">
+            My Notes
+          </h1>
+
+          <p className="mt-4 max-w-2xl text-lg leading-8 text-white/70">
+            Notes submitted by {currentBrother.name}.
+          </p>
+        </section>
       </header>
 
-      <section className="mx-auto max-w-md space-y-3 px-4 py-5">
-        {myFeedback.length === 0 && (
-          <div className="rounded-2xl bg-white p-4 text-sm text-slate-600 shadow-sm">
-            You have not submitted any feedback yet.
-          </div>
+      <section className="mx-auto max-w-6xl px-4 py-8">
+        {errorMessage && (
+          <p className="mb-6 rounded-2xl bg-[#F5E8EA] p-4 text-sm font-bold text-[#8A1F2D]">
+            {errorMessage}
+          </p>
         )}
 
-        {myFeedback.map((item) => (
-          <div key={item.id} className="rounded-2xl bg-white p-4 shadow-sm">
-            <div className="flex items-start justify-between gap-4">
-              <div>
-                <h2 className="font-bold">{item.rusheeName}</h2>
-                <p className="text-xs text-slate-500">
-                  #{item.rusheeNumber} · {item.events.join(", ")}
-                </p>
-              </div>
+        <div className="mb-6 rounded-3xl border border-[#E5DDD0] bg-white p-6 shadow-sm">
+          <p className="text-sm text-slate-500">Total Notes</p>
+          <p className="mt-2 text-4xl font-black">{myFeedback.length}</p>
+        </div>
 
-              <a
-                href={`/feedback/${item.rusheeId}`}
-                className="rounded-full border border-[#061A33] px-3 py-1 text-xs font-bold text-[#061A33]"
+        <div className="space-y-5">
+          {myFeedback.length === 0 && (
+            <div className="rounded-3xl border border-[#E5DDD0] bg-white p-6 text-sm text-slate-600 shadow-sm">
+              You have not submitted any notes yet.
+            </div>
+          )}
+
+          {myFeedback.map((item) => {
+            const rushee = item.rushees;
+            const events = getFeedbackEvents(item);
+
+            return (
+              <article
+                key={item.id}
+                className="rounded-3xl border border-[#E5DDD0] bg-white p-6 shadow-sm"
               >
-                Edit
-              </a>
-            </div>
+                <div className="grid gap-5 md:grid-cols-[10rem_1fr]">
+                  <div className="h-40 w-full overflow-hidden rounded-3xl bg-[#F0E8DA] md:h-40 md:w-40">
+                    <img
+                      src={rushee?.photo || defaultPhoto}
+                      alt={rushee?.name || "Rushee"}
+                      className="h-full w-full object-cover object-center"
+                    />
+                  </div>
 
-            <div className="mt-4 grid grid-cols-5 gap-2 text-center text-xs">
-              <div className="rounded-xl bg-[#F4F1EA] p-2">
-                <p className="font-extrabold">{item.communication}</p>
-                <p className="text-slate-500">Comm</p>
-              </div>
+                  <div>
+                    <div className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
+                      <div>
+                        <h2 className="text-2xl font-black">
+                          {rushee
+                            ? `#${rushee.number} ${rushee.name}`
+                            : "Rushee deleted"}
+                        </h2>
 
-              <div className="rounded-xl bg-[#F4F1EA] p-2">
-                <p className="font-extrabold">{item.passion}</p>
-                <p className="text-slate-500">Passion</p>
-              </div>
+                        {rushee && (
+                          <p className="mt-2 text-sm text-slate-600">
+                            {rushee.major || "No major"} ·{" "}
+                            {rushee.year || "No year"}
+                            {rushee.gender ? ` · ${rushee.gender}` : ""}
+                          </p>
+                        )}
 
-              <div className="rounded-xl bg-[#F4F1EA] p-2">
-                <p className="font-extrabold">{item.cultureFit}</p>
-                <p className="text-slate-500">Culture</p>
-              </div>
+                        <p className="mt-2 text-xs text-slate-500">
+                          Last updated:{" "}
+                          {new Date(item.updated_at).toLocaleDateString()}
+                        </p>
+                      </div>
 
-              <div className="rounded-xl bg-[#F4F1EA] p-2">
-                <p className="font-extrabold">{item.fitAddChoice}</p>
-                <p className="text-slate-500">Choice</p>
-              </div>
+                      {rushee && (
+                        <a
+                          href={`/feedback/${rushee.id}`}
+                          className="rounded-full border border-[#071E34] px-5 py-2 text-center text-sm font-bold text-[#071E34]"
+                        >
+                          Edit Note
+                        </a>
+                      )}
+                    </div>
 
-              <div className="rounded-xl bg-[#F4F1EA] p-2">
-                <p className="font-extrabold">{item.fitAddScore}</p>
-                <p className="text-slate-500">Score</p>
-              </div>
-            </div>
+                    <div className="mt-5 grid grid-cols-2 gap-3 md:grid-cols-5">
+                      <div className="rounded-2xl bg-[#F6F1E8] p-4 text-center">
+                        <p className="text-xl font-black">
+                          {item.communication}
+                        </p>
+                        <p className="text-xs text-slate-500">Comm</p>
+                      </div>
 
-            <div className="mt-4 rounded-xl border border-[#E5E0D8] p-3">
-              <p className="text-xs font-bold uppercase tracking-wide text-slate-500">
-                Comment
-              </p>
+                      <div className="rounded-2xl bg-[#F6F1E8] p-4 text-center">
+                        <p className="text-xl font-black">{item.passion}</p>
+                        <p className="text-xs text-slate-500">Passion</p>
+                      </div>
 
-              <p className="mt-2 text-sm leading-6 text-slate-700">
-                {item.comment}
-              </p>
-            </div>
-          </div>
-        ))}
+                      <div className="rounded-2xl bg-[#F6F1E8] p-4 text-center">
+                        <p className="text-xl font-black">
+                          {item.culture_fit}
+                        </p>
+                        <p className="text-xs text-slate-500">Culture</p>
+                      </div>
+
+                      <div className="rounded-2xl bg-[#F6F1E8] p-4 text-center">
+                        <p className="text-xl font-black">
+                          {item.fit_add_choice}
+                        </p>
+                        <p className="text-xs text-slate-500">Choice</p>
+                      </div>
+
+                      <div className="rounded-2xl bg-[#F6F1E8] p-4 text-center">
+                        <p className="text-xl font-black">
+                          {item.fit_add_score}
+                        </p>
+                        <p className="text-xs text-slate-500">Fit/Add</p>
+                      </div>
+                    </div>
+
+                    <div className="mt-5 rounded-2xl border border-[#E5DDD0] p-4">
+                      <p className="text-xs font-bold uppercase tracking-wide text-slate-500">
+                        Events Talked At
+                      </p>
+
+                      <div className="mt-3 flex flex-wrap gap-2">
+                        {events.length === 0 && (
+                          <p className="text-sm text-slate-600">
+                            No events selected.
+                          </p>
+                        )}
+
+                        {events.map((event) => (
+                          <span
+                            key={event.id}
+                            className="rounded-full bg-[#F6F1E8] px-4 py-2 text-xs font-bold text-[#071E34]"
+                          >
+                            {event.name}
+                          </span>
+                        ))}
+                      </div>
+                    </div>
+
+                    <div className="mt-5 rounded-2xl bg-[#F6F1E8] p-4">
+                      <p className="text-xs font-bold uppercase tracking-wide text-slate-500">
+                        Comment
+                      </p>
+
+                      <p className="mt-2 text-sm leading-6 text-slate-700">
+                        {item.comment || "No comment provided."}
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              </article>
+            );
+          })}
+        </div>
       </section>
     </main>
   );

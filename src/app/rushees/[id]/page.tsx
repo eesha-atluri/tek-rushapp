@@ -1,180 +1,296 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { useParams } from "next/navigation";
-import { getStoredRushees, type Rushee } from "@/lib/rusheeStorage";
-import { feedback } from "@/lib/mockData";
+import { useParams, useRouter } from "next/navigation";
 import BrotherNav from "@/app/components/BrotherNav";
+import { supabase } from "@/lib/supabase";
+import {
+  getCurrentBrotherProfile,
+  type CurrentBrother,
+} from "@/lib/backend/currentBrother";
 
-type SavedFeedback = {
+type EventRow = {
   id: string;
-  rusheeId: string;
-  rusheeName: string;
-  rusheeNumber: number;
-  events: string[];
-  communication: number;
-  passion: number;
-  cultureFit: number;
-  fitAddChoice: string;
-  fitAddScore: number;
-  comment: string;
+  name: string;
+  date: string | null;
+  time: string | null;
+  type: string;
 };
+
+type RusheeEventRow = {
+  events: EventRow | null;
+};
+
+type HashDecisionRow = {
+  stage: string;
+};
+
+type RusheeRow = {
+  id: string;
+  number: number;
+  name: string;
+  major: string | null;
+  year: string | null;
+  gender: string | null;
+  photo: string | null;
+  application_summary: string | null;
+  assigned_brother_id: string | null;
+  rushee_events?: RusheeEventRow[];
+  hash_decisions?: HashDecisionRow[];
+};
+
+type FeedbackRow = {
+  id: string;
+  brother_id: string;
+};
+
+const defaultPhoto =
+  "https://images.unsplash.com/photo-1552053831-71594a27632d?w=500&h=500&fit=crop";
+
+function getRusheeEvents(rushee: RusheeRow) {
+  return (
+    rushee.rushee_events
+      ?.map((item) => item.events)
+      .filter((event): event is EventRow => Boolean(event)) || []
+  );
+}
 
 export default function RusheeProfilePage() {
   const params = useParams();
-  const id = params.id as string;
+  const router = useRouter();
 
-  const [rushee, setRushee] = useState<Rushee | null>(null);
-  const [allFeedback, setAllFeedback] = useState<SavedFeedback[]>([]);
+  const rusheeId = params.id as string;
+
+  const [currentBrother, setCurrentBrother] =
+    useState<CurrentBrother | null>(null);
+  const [rushee, setRushee] = useState<RusheeRow | null>(null);
+  const [reviewCount, setReviewCount] = useState(0);
+  const [hasMyFeedback, setHasMyFeedback] = useState(false);
+
+  const [loading, setLoading] = useState(true);
+  const [errorMessage, setErrorMessage] = useState("");
 
   useEffect(() => {
-    const storedRushees = getStoredRushees();
-    const foundRushee = storedRushees.find((item) => item.id === id) || null;
+    loadRusheeProfile();
+  }, [rusheeId]);
 
-    setRushee(foundRushee);
+  async function loadRusheeProfile() {
+    try {
+      setLoading(true);
+      setErrorMessage("");
 
-    const savedFeedbackString = localStorage.getItem("tek-feedback");
+      const brother = await getCurrentBrotherProfile();
 
-    const savedFeedback: SavedFeedback[] = savedFeedbackString
-      ? JSON.parse(savedFeedbackString)
-      : feedback;
+      if (!brother) {
+        router.push("/");
+        return;
+      }
 
-    setAllFeedback(savedFeedback);
-  }, [id]);
+      setCurrentBrother(brother);
 
-  if (!rushee) {
+      const { data: rusheeData, error: rusheeError } = await supabase
+        .from("rushees")
+        .select(
+          `
+          id,
+          number,
+          name,
+          major,
+          year,
+          gender,
+          photo,
+          application_summary,
+          assigned_brother_id,
+          rushee_events (
+            events (
+              id,
+              name,
+              date,
+              time,
+              type
+            )
+          ),
+          hash_decisions (
+            stage
+          )
+        `
+        )
+        .eq("id", rusheeId)
+        .single();
+
+      if (rusheeError) {
+        throw rusheeError;
+      }
+
+      const { data: feedbackData, error: feedbackError } = await supabase
+        .from("feedback")
+        .select("id, brother_id")
+        .eq("rushee_id", rusheeId);
+
+      if (feedbackError) {
+        throw feedbackError;
+      }
+
+      const feedbackRows = (feedbackData || []) as FeedbackRow[];
+
+      setRushee(rusheeData as unknown as RusheeRow);
+      setReviewCount(feedbackRows.length);
+      setHasMyFeedback(
+        feedbackRows.some((item) => item.brother_id === brother.id)
+      );
+    } catch (error) {
+      console.error(error);
+      setErrorMessage("Could not load rushee profile.");
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  if (loading || !currentBrother) {
     return (
-      <main className="min-h-screen bg-[#F4F1EA] p-6 text-[#061A33]">
-        <p>Rushee not found.</p>
+      <main className="min-h-screen bg-[#F6F1E8] text-[#071E34]">
+        <BrotherNav />
 
-        <a href="/rushees" className="mt-4 block font-bold text-[#061A33]">
-          Back to Rushees
-        </a>
+        <section className="mx-auto max-w-3xl px-4 py-20">
+          <div className="rounded-3xl border border-[#E5DDD0] bg-white p-6 text-sm text-slate-600">
+            Loading rushee profile...
+          </div>
+        </section>
       </main>
     );
   }
 
-  const rusheeFeedback = allFeedback.filter(
-    (item) => item.rusheeId === rushee.id
-  );
+  if (!rushee) {
+    return (
+      <main className="min-h-screen bg-[#F6F1E8] text-[#071E34]">
+        <BrotherNav />
 
-  const hasMyFeedback = rusheeFeedback.length > 0;
+        <section className="mx-auto max-w-3xl px-4 py-20">
+          <div className="rounded-3xl border border-[#E5DDD0] bg-white p-6 text-sm text-slate-600">
+            {errorMessage || "Rushee not found."}
+          </div>
+        </section>
+      </main>
+    );
+  }
+
+  const events = getRusheeEvents(rushee);
+  const stage = rushee.hash_decisions?.[0]?.stage || "Hash #1";
 
   return (
-    <main className="min-h-screen bg-[#F4F1EA] pb-20 text-[#061A33]">
-        <BrotherNav />
-      <header className="bg-[#061A33] px-5 py-4 text-white">
-        <a href="/rush-board" className="text-sm font-semibold text-[#C49A45]">
-          ← Back to Rush Board
-        </a>
+    <main className="min-h-screen bg-[#F6F1E8] pb-20 text-[#071E34]">
+      <BrotherNav />
 
-        <h1 className="mt-2 text-xl font-extrabold">Rushee Profile</h1>
+      <header className="bg-[#071E34] px-6 py-12 text-white">
+        <section className="mx-auto max-w-6xl">
+          <p className="text-sm font-bold uppercase tracking-[0.35em] text-[#C69A3D]">
+            Rushee Profile
+          </p>
+
+          <h1 className="mt-4 text-5xl font-black tracking-tight">
+            #{rushee.number} {rushee.name}
+          </h1>
+
+          <p className="mt-4 max-w-2xl text-lg leading-8 text-white/70">
+            {rushee.major || "No major"} · {rushee.year || "No year"}
+            {rushee.gender ? ` · ${rushee.gender}` : ""}
+          </p>
+        </section>
       </header>
 
-      <section className="mx-auto max-w-md">
-        <img
-          src={rushee.photo}
-          alt={rushee.name}
-          className="h-64 w-full object-cover"
-        />
+      <section className="mx-auto max-w-6xl px-4 py-8">
+        <div className="grid gap-6 lg:grid-cols-[0.8fr_1.2fr]">
+          <aside className="rounded-3xl border border-[#E5DDD0] bg-white p-6 shadow-sm">
+            <div className="overflow-hidden rounded-3xl bg-[#F0E8DA]">
+              <img
+                src={rushee.photo || defaultPhoto}
+                alt={rushee.name}
+                className="h-96 w-full object-cover object-center"
+              />
+            </div>
 
-        <div className="px-4 py-5">
-          <div className="rounded-2xl bg-white p-5 shadow-sm">
-            <div className="flex items-start justify-between gap-4">
-              <div>
-                <h2 className="text-2xl font-extrabold">
-                  #{rushee.number} {rushee.name}
-                </h2>
+            <div className="mt-5 grid gap-3">
+              <div className="rounded-2xl bg-[#F6F1E8] p-4">
+                <p className="text-xs font-bold uppercase tracking-wide text-slate-500">
+                  Current Stage
+                </p>
+                <p className="mt-2 text-lg font-black">{stage}</p>
+              </div>
 
-                <p className="mt-1 text-sm text-slate-600">
-                  {rushee.major || "No major"} · {rushee.year || "No year"}
+              <div className="rounded-2xl bg-[#F6F1E8] p-4">
+                <p className="text-xs font-bold uppercase tracking-wide text-slate-500">
+                  Total Reviews
+                </p>
+                <p className="mt-2 text-lg font-black">{reviewCount}</p>
+              </div>
+
+              <div className="rounded-2xl bg-[#F6F1E8] p-4">
+                <p className="text-xs font-bold uppercase tracking-wide text-slate-500">
+                  My Note
+                </p>
+                <p className="mt-2 text-lg font-black">
+                  {hasMyFeedback ? "Submitted" : "Not submitted"}
                 </p>
               </div>
             </div>
+          </aside>
 
-            <div className="mt-5">
-              <p className="text-xs font-bold uppercase tracking-wide text-slate-500">
-                Events Attended
-              </p>
+          <section className="rounded-3xl border border-[#E5DDD0] bg-white p-6 shadow-sm">
+            <h2 className="text-3xl font-black">{rushee.name}</h2>
 
-              <div className="mt-2 flex flex-wrap gap-2">
-                {rushee.events.length > 0 ? (
-                  rushee.events.map((event) => (
-                    <span
-                      key={event}
-                      className="rounded-full border border-[#C49A45]/40 bg-[#F4F1EA] px-3 py-1 text-xs font-semibold"
-                    >
-                      {event}
-                    </span>
-                  ))
-                ) : (
-                  <p className="text-sm text-slate-500">No events selected.</p>
-                )}
-              </div>
-            </div>
+            <p className="mt-3 text-lg text-slate-600">
+              #{rushee.number} · {rushee.major || "No major"} ·{" "}
+              {rushee.year || "No year"}
+              {rushee.gender ? ` · ${rushee.gender}` : ""}
+            </p>
 
-            <div className="mt-5">
+            <div className="mt-6 rounded-2xl bg-[#F6F1E8] p-4">
               <p className="text-xs font-bold uppercase tracking-wide text-slate-500">
                 Application Summary
               </p>
 
               <p className="mt-2 text-sm leading-6 text-slate-700">
-                {rushee.applicationSummary || "No summary provided."}
+                {rushee.application_summary || "No summary provided."}
               </p>
             </div>
 
-            <div className="mt-5 grid grid-cols-3 gap-2 text-center">
-              <div className="rounded-xl border border-[#E5E0D8] p-3">
-                <p className="text-xl font-extrabold">
-                  {rusheeFeedback.length}
-                </p>
-                <p className="text-xs text-slate-500">Reviews</p>
-              </div>
+            <div className="mt-6 rounded-2xl border border-[#E5DDD0] p-4">
+              <p className="text-sm font-black">Events Attended</p>
 
-              <div className="rounded-xl border border-[#E5E0D8] p-3">
-                <p className="text-xl font-extrabold">
-                  {rushee.events.length}
-                </p>
-                <p className="text-xs text-slate-500">Events</p>
-              </div>
+              <div className="mt-3 flex flex-wrap gap-2">
+                {events.length === 0 && (
+                  <p className="text-sm text-slate-600">No events yet.</p>
+                )}
 
-              <div className="rounded-xl border border-[#E5E0D8] p-3">
-                <p className="text-xl font-extrabold">
-                  {hasMyFeedback ? "Yes" : "No"}
-                </p>
-                <p className="text-xs text-slate-500">My Vote</p>
+                {events.map((event) => (
+                  <span
+                    key={event.id}
+                    className="rounded-full bg-[#F6F1E8] px-4 py-2 text-xs font-bold text-[#071E34]"
+                  >
+                    {event.name}
+                    {event.date ? ` · ${event.date}` : ""}
+                    {event.time ? ` · ${event.time}` : ""}
+                  </span>
+                ))}
               </div>
             </div>
 
-            <div className="mt-5 rounded-2xl bg-[#F4F1EA] p-4">
-  <p className="text-xs font-bold uppercase tracking-wide text-slate-500">
-    Review Progress
-  </p>
+            <div className="mt-8 flex flex-col gap-3 sm:flex-row">
+              <a
+                href="/rush-board"
+                className="rounded-full border border-[#071E34] px-6 py-3 text-center text-sm font-bold text-[#071E34]"
+              >
+                Back to Rush Board
+              </a>
 
-  <p className="mt-2 text-sm text-slate-700">
-    {rusheeFeedback.length} feedback entr
-    {rusheeFeedback.length === 1 ? "y" : "ies"} submitted.
-  </p>
-
-  <p className="mt-2 text-xs text-slate-500">
-    Use this to see whether this rushee needs more brother feedback before hash.
-  </p>
-</div>
-
-            <a
-              href={`/feedback/${rushee.id}`}
-              className="mt-6 block rounded-xl bg-[#061A33] px-4 py-3 text-center font-bold text-white shadow-md"
-            >
-              {hasMyFeedback ? "Edit My Feedback" : "Rank This Rushee"}
-            </a>
-
-            <a
-              href="/my-feedback"
-              className="mt-3 block rounded-xl border border-[#061A33] px-4 py-3 text-center font-bold text-[#061A33]"
-            >
-              View My Feedback
-            </a>
-          </div>
+              <a
+                href={`/feedback/${rushee.id}`}
+                className="rounded-full bg-[#071E34] px-6 py-3 text-center text-sm font-bold text-[#F6F1E8]"
+              >
+                {hasMyFeedback ? "Edit Note" : "Leave Note"}
+              </a>
+            </div>
+          </section>
         </div>
       </section>
     </main>

@@ -3,53 +3,51 @@
 import { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import BrotherNav from "@/app/components/BrotherNav";
-import { events as defaultEvents, feedback } from "@/lib/mockData";
-import { getStoredRushees, type Rushee } from "@/lib/rusheeStorage";
+import { supabase } from "@/lib/supabase";
+import {
+  getCurrentBrotherProfile,
+  type CurrentBrother,
+} from "@/lib/backend/currentBrother";
 
-type SavedFeedback = {
-  id: string;
-  rusheeId: string;
-  rusheeName: string;
-  rusheeNumber: number;
-  events: string[];
-  communication: number;
-  passion: number;
-  cultureFit: number;
-  fitAddChoice: "Fit" | "Add" | "Neither";
-  fitAddScore: number;
-  comment: string;
-};
-
-type EventItem = {
+type EventRow = {
   id: string;
   name: string;
-  date: string;
-  type: "Open Rush" | "Closed Rush";
+  date: string | null;
+  time: string | null;
+  type: string;
 };
 
-function getStoredEvents(): EventItem[] {
-  if (typeof window === "undefined") {
-    return defaultEvents.map((event, index) => ({
-      id: String(index + 1),
-      name: event,
-      date: "",
-      type: "Open Rush",
-    }));
-  }
+type RusheeRow = {
+  id: string;
+  number: number;
+  name: string;
+  major: string | null;
+  year: string | null;
+  gender: string | null;
+  photo: string | null;
+  application_summary: string | null;
+};
 
-  const savedEventsString = localStorage.getItem("tek-events");
+type FeedbackRow = {
+  id: string;
+  rushee_id: string;
+  brother_id: string;
+  communication: number;
+  passion: number;
+  culture_fit: number;
+  fit_add_choice: "Fit" | "Add" | "Neither";
+  fit_add_score: number;
+  comment: string | null;
+};
 
-  if (savedEventsString) {
-    return JSON.parse(savedEventsString);
-  }
+type FeedbackEventRow = {
+  events: {
+    name: string;
+  } | null;
+};
 
-  return defaultEvents.map((event, index) => ({
-    id: String(index + 1),
-    name: event,
-    date: "",
-    type: "Open Rush",
-  }));
-}
+const defaultPhoto =
+  "https://images.unsplash.com/photo-1552053831-71594a27632d?w=500&h=500&fit=crop";
 
 export default function FeedbackPage() {
   const params = useParams();
@@ -57,12 +55,13 @@ export default function FeedbackPage() {
 
   const rusheeId = params.id as string;
 
-  const [rusheeList, setRusheeList] = useState<Rushee[]>([]);
-  const [rushee, setRushee] = useState<Rushee | null>(null);
-  const [eventList, setEventList] = useState<EventItem[]>([]);
-  const [allFeedback, setAllFeedback] = useState<SavedFeedback[]>([]);
+  const [currentBrother, setCurrentBrother] =
+    useState<CurrentBrother | null>(null);
 
+  const [rushee, setRushee] = useState<RusheeRow | null>(null);
+  const [eventList, setEventList] = useState<EventRow[]>([]);
   const [selectedEvents, setSelectedEvents] = useState<string[]>([]);
+
   const [communication, setCommunication] = useState(3);
   const [passion, setPassion] = useState(3);
   const [cultureFit, setCultureFit] = useState(3);
@@ -76,118 +75,259 @@ export default function FeedbackPage() {
     null
   );
 
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
+  const [errorMessage, setErrorMessage] = useState("");
+
   useEffect(() => {
-    const storedRushees = getStoredRushees();
-    const currentRushee =
-      storedRushees.find((item) => item.id === rusheeId) || null;
-
-    setRusheeList(storedRushees);
-    setRushee(currentRushee);
-    setEventList(getStoredEvents());
-
-    const savedFeedbackString = localStorage.getItem("tek-feedback");
-
-    const savedFeedback: SavedFeedback[] = savedFeedbackString
-      ? JSON.parse(savedFeedbackString)
-      : feedback;
-
-    setAllFeedback(savedFeedback);
-
-    const existingFeedback = savedFeedback.find(
-      (item) => item.rusheeId === rusheeId
-    );
-
-    if (existingFeedback) {
-      setExistingFeedbackId(existingFeedback.id);
-      setSelectedEvents(existingFeedback.events || []);
-      setCommunication(existingFeedback.communication);
-      setPassion(existingFeedback.passion);
-      setCultureFit(existingFeedback.cultureFit);
-      setFitAddChoice(existingFeedback.fitAddChoice);
-      setFitAddScore(existingFeedback.fitAddScore);
-      setComment(existingFeedback.comment);
-    }
+    loadFeedbackPage();
   }, [rusheeId]);
+
+  async function loadFeedbackPage() {
+    try {
+      setLoading(true);
+      setErrorMessage("");
+
+      const brother = await getCurrentBrotherProfile();
+
+      if (!brother) {
+        router.push("/");
+        return;
+      }
+
+      setCurrentBrother(brother);
+
+      const { data: rusheeData, error: rusheeError } = await supabase
+        .from("rushees")
+        .select(
+          `
+          id,
+          number,
+          name,
+          major,
+          year,
+          gender,
+          photo,
+          application_summary
+        `
+        )
+        .eq("id", rusheeId)
+        .single();
+
+      if (rusheeError) {
+        throw rusheeError;
+      }
+
+      const { data: eventsData, error: eventsError } = await supabase
+        .from("events")
+        .select("id, name, date, time, type")
+        .order("created_at", { ascending: true });
+
+      if (eventsError) {
+        throw eventsError;
+      }
+
+      const { data: feedbackData, error: feedbackError } = await supabase
+        .from("feedback")
+        .select(
+          `
+          id,
+          rushee_id,
+          brother_id,
+          communication,
+          passion,
+          culture_fit,
+          fit_add_choice,
+          fit_add_score,
+          comment
+        `
+        )
+        .eq("rushee_id", rusheeId)
+        .eq("brother_id", brother.id)
+        .maybeSingle();
+
+      if (feedbackError) {
+        throw feedbackError;
+      }
+
+      setRushee(rusheeData as RusheeRow);
+      setEventList((eventsData || []) as EventRow[]);
+
+      if (feedbackData) {
+        const existing = feedbackData as FeedbackRow;
+
+        setExistingFeedbackId(existing.id);
+        setCommunication(existing.communication);
+        setPassion(existing.passion);
+        setCultureFit(existing.culture_fit);
+        setFitAddChoice(existing.fit_add_choice);
+        setFitAddScore(existing.fit_add_score);
+        setComment(existing.comment || "");
+
+        const { data: feedbackEventsData, error: feedbackEventsError } =
+          await supabase
+            .from("feedback_events")
+            .select(
+              `
+              events (
+                name
+              )
+            `
+            )
+            .eq("feedback_id", existing.id);
+
+        if (feedbackEventsError) {
+          throw feedbackEventsError;
+        }
+
+        const existingEventNames =
+          ((feedbackEventsData || []) as unknown as FeedbackEventRow[])
+            .map((item) => item.events?.name)
+            .filter((name): name is string => Boolean(name));
+
+        setSelectedEvents(existingEventNames);
+      } else {
+        setExistingFeedbackId(null);
+        setSelectedEvents([]);
+        setCommunication(3);
+        setPassion(3);
+        setCultureFit(3);
+        setFitAddChoice("Fit");
+        setFitAddScore(3);
+        setComment("");
+      }
+    } catch (error) {
+      console.error(error);
+      setErrorMessage("Could not load feedback page.");
+    } finally {
+      setLoading(false);
+    }
+  }
 
   function toggleEvent(eventName: string) {
     if (selectedEvents.includes(eventName)) {
       setSelectedEvents(selectedEvents.filter((event) => event !== eventName));
-    } else {
-      setSelectedEvents([...selectedEvents, eventName]);
-    }
-  }
-
-  function getNextUnvotedRusheeId(updatedFeedback: SavedFeedback[]) {
-    const currentIndex = rusheeList.findIndex((item) => item.id === rusheeId);
-
-    const orderedRushees = [
-      ...rusheeList.slice(currentIndex + 1),
-      ...rusheeList.slice(0, currentIndex),
-    ];
-
-    const nextUnvotedRushee = orderedRushees.find(
-      (item) =>
-        !updatedFeedback.some((feedbackItem) => feedbackItem.rusheeId === item.id)
-    );
-
-    return nextUnvotedRushee?.id || null;
-  }
-
-  function saveFeedback(destination: "board" | "next") {
-    if (!rushee) return;
-
-    const finalFitAddScore = fitAddChoice === "Neither" ? 0 : fitAddScore;
-
-    const newFeedback: SavedFeedback = {
-      id: existingFeedbackId || String(Date.now()),
-      rusheeId: rushee.id,
-      rusheeName: rushee.name,
-      rusheeNumber: rushee.number,
-      events: selectedEvents,
-      communication,
-      passion,
-      cultureFit,
-      fitAddChoice,
-      fitAddScore: finalFitAddScore,
-      comment,
-    };
-
-    let updatedFeedback: SavedFeedback[];
-
-    if (existingFeedbackId) {
-      updatedFeedback = allFeedback.map((item) =>
-        item.id === existingFeedbackId ? newFeedback : item
-      );
-    } else {
-      updatedFeedback = [...allFeedback, newFeedback];
-    }
-
-    setAllFeedback(updatedFeedback);
-    localStorage.setItem("tek-feedback", JSON.stringify(updatedFeedback));
-
-    if (destination === "next") {
-      const nextRusheeId = getNextUnvotedRusheeId(updatedFeedback);
-
-      if (nextRusheeId) {
-        router.push(`/feedback/${nextRusheeId}`);
-      } else {
-        router.push("/rush-board");
-      }
-
       return;
     }
 
-    router.push("/rush-board");
+    setSelectedEvents([...selectedEvents, eventName]);
+  }
+
+  async function syncFeedbackEvents(feedbackId: string) {
+    const { error: deleteError } = await supabase
+      .from("feedback_events")
+      .delete()
+      .eq("feedback_id", feedbackId);
+
+    if (deleteError) {
+      throw deleteError;
+    }
+
+    const selectedEventIds = eventList
+      .filter((event) => selectedEvents.includes(event.name))
+      .map((event) => event.id);
+
+    if (selectedEventIds.length === 0) {
+      return;
+    }
+
+    const rows = selectedEventIds.map((eventId) => ({
+      feedback_id: feedbackId,
+      event_id: eventId,
+    }));
+
+    const { error: insertError } = await supabase
+      .from("feedback_events")
+      .insert(rows);
+
+    if (insertError) {
+      throw insertError;
+    }
+  }
+
+  async function saveFeedback() {
+    if (!rushee || !currentBrother) return;
+
+    try {
+      setSaving(true);
+      setErrorMessage("");
+
+      const finalFitAddScore = fitAddChoice === "Neither" ? 0 : fitAddScore;
+
+      const payload = {
+        rushee_id: rushee.id,
+        brother_id: currentBrother.id,
+        communication,
+        passion,
+        culture_fit: cultureFit,
+        fit_add_choice: fitAddChoice,
+        fit_add_score: finalFitAddScore,
+        comment,
+        updated_at: new Date().toISOString(),
+      };
+
+      let feedbackId = existingFeedbackId;
+
+      if (existingFeedbackId) {
+        const { error } = await supabase
+          .from("feedback")
+          .update(payload)
+          .eq("id", existingFeedbackId);
+
+        if (error) {
+          throw error;
+        }
+      } else {
+        const { data, error } = await supabase
+          .from("feedback")
+          .insert(payload)
+          .select("id")
+          .single();
+
+        if (error) {
+          throw error;
+        }
+
+        feedbackId = data.id;
+      }
+
+      if (!feedbackId) {
+        throw new Error("No feedback ID found after save.");
+      }
+
+      await syncFeedbackEvents(feedbackId);
+
+      router.push("/rush-board");
+    } catch (error) {
+      console.error(error);
+      setErrorMessage("Could not save note. Check your account permissions.");
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  if (loading || !currentBrother) {
+    return (
+      <main className="min-h-screen bg-[#F6F1E8] text-[#071E34]">
+        <BrotherNav />
+
+        <section className="mx-auto max-w-3xl px-4 py-20">
+          <div className="rounded-3xl border border-[#E5DDD0] bg-white p-6 text-sm text-slate-600">
+            Loading feedback form...
+          </div>
+        </section>
+      </main>
+    );
   }
 
   if (!rushee) {
     return (
-      <main className="min-h-screen bg-[#F4F1EA] text-[#061A33]">
+      <main className="min-h-screen bg-[#F6F1E8] text-[#071E34]">
         <BrotherNav />
 
-        <section className="mx-auto max-w-3xl px-4 py-8">
-          <div className="rounded-3xl border border-[#E5E0D8] bg-white p-6 text-sm text-slate-600">
-            Rushee not found.
+        <section className="mx-auto max-w-3xl px-4 py-20">
+          <div className="rounded-3xl border border-[#E5DDD0] bg-white p-6 text-sm text-slate-600">
+            {errorMessage || "Rushee not found."}
           </div>
         </section>
       </main>
@@ -195,66 +335,68 @@ export default function FeedbackPage() {
   }
 
   return (
-    <main className="min-h-screen bg-[#F4F1EA] pb-20 text-[#061A33]">
+    <main className="min-h-screen bg-[#F6F1E8] pb-20 text-[#071E34]">
       <BrotherNav />
 
-      <header className="bg-[#061A33] px-6 py-8 text-white">
+      <header className="bg-[#071E34] px-6 py-12 text-white">
         <section className="mx-auto max-w-5xl">
-          <p className="text-xs font-bold uppercase tracking-[0.3em] text-[#C49A45]">
+          <p className="text-sm font-bold uppercase tracking-[0.35em] text-[#C69A3D]">
             Brother View
           </p>
 
-          <h1 className="mt-2 text-4xl font-extrabold">
+          <h1 className="mt-4 text-5xl font-black tracking-tight">
             {existingFeedbackId ? "Edit Note" : "Leave Note"}
           </h1>
 
-          <p className="mt-3 max-w-2xl text-sm leading-6 text-white/70">
-            Submit your feedback privately. Brothers can see that you voted, but
-            not your ratings or comments.
+          <p className="mt-4 max-w-2xl text-lg leading-8 text-white/70">
+            Logged in as {currentBrother.name}. Submit your private note for{" "}
+            {rushee.name}.
           </p>
         </section>
       </header>
 
       <section className="mx-auto max-w-5xl px-4 py-8">
+        {errorMessage && (
+          <p className="mb-6 rounded-2xl bg-[#F5E8EA] p-4 text-sm font-bold text-[#8A1F2D]">
+            {errorMessage}
+          </p>
+        )}
+
         <div className="grid gap-6 lg:grid-cols-[0.8fr_1.2fr]">
-          <aside className="rounded-3xl border border-[#E5E0D8] bg-white p-6 shadow-sm">
-            <img
-              src={rushee.photo}
-              alt={rushee.name}
-              className="h-64 w-full rounded-3xl object-cover"
-            />
+          <aside className="rounded-3xl border border-[#E5DDD0] bg-white p-6 shadow-sm">
+            <div className="overflow-hidden rounded-3xl bg-[#F0E8DA]">
+              <img
+                src={rushee.photo || defaultPhoto}
+                alt={rushee.name}
+                className="h-80 w-full object-cover object-center"
+              />
+            </div>
 
             <div className="mt-5">
-              <h2 className="text-3xl font-extrabold">
+              <h2 className="text-3xl font-black">
                 #{rushee.number} {rushee.name}
               </h2>
 
               <p className="mt-2 text-base text-slate-600">
                 {rushee.major || "No major"} · {rushee.year || "No year"}
-              </p>
-
-              <p className="mt-4 text-sm leading-6 text-slate-600">
-                Seen at:{" "}
-                {rushee.events.length > 0
-                  ? rushee.events.join(", ")
-                  : "No events yet"}
+                {rushee.gender ? ` · ${rushee.gender}` : ""}
               </p>
             </div>
 
-            <div className="mt-5 rounded-2xl bg-[#F4F1EA] p-4">
+            <div className="mt-5 rounded-2xl bg-[#F6F1E8] p-4">
               <p className="text-xs font-bold uppercase tracking-wide text-slate-500">
                 Application Summary
               </p>
 
               <p className="mt-2 text-sm leading-6 text-slate-700">
-                {rushee.applicationSummary || "No summary provided."}
+                {rushee.application_summary || "No summary provided."}
               </p>
             </div>
           </aside>
 
-          <section className="rounded-3xl border border-[#E5E0D8] bg-white p-6 shadow-sm">
+          <section className="rounded-3xl border border-[#E5DDD0] bg-white p-6 shadow-sm">
             <div>
-              <h3 className="text-lg font-extrabold">Events Talked At</h3>
+              <h3 className="text-lg font-black">Events Talked At</h3>
 
               <p className="mt-1 text-sm text-slate-500">
                 Select every event where you interacted with this rushee.
@@ -271,8 +413,8 @@ export default function FeedbackPage() {
                       onClick={() => toggleEvent(event.name)}
                       className={`rounded-full border px-4 py-2 text-sm font-bold ${
                         isSelected
-                          ? "border-[#061A33] bg-[#061A33] text-[#F4F1EA]"
-                          : "border-[#061A33] bg-white text-[#061A33] hover:bg-[#F4F1EA]"
+                          ? "border-[#071E34] bg-[#071E34] text-[#F6F1E8]"
+                          : "border-[#071E34] bg-white text-[#071E34] hover:bg-[#F6F1E8]"
                       }`}
                     >
                       {isSelected ? "✓ " : ""}
@@ -284,12 +426,14 @@ export default function FeedbackPage() {
             </div>
 
             <div className="mt-8 grid gap-4 md:grid-cols-3">
-              <label className="rounded-2xl bg-[#F4F1EA] p-4">
-                <span className="text-sm font-extrabold">Communication</span>
+              <label className="rounded-2xl bg-[#F6F1E8] p-4">
+                <span className="text-sm font-black">Communication</span>
                 <select
                   value={communication}
-                  onChange={(event) => setCommunication(Number(event.target.value))}
-                  className="mt-3 w-full rounded-xl border border-[#E5E0D8] bg-white px-3 py-3 text-sm outline-none"
+                  onChange={(event) =>
+                    setCommunication(Number(event.target.value))
+                  }
+                  className="mt-3 w-full rounded-xl border border-[#E5DDD0] bg-white px-3 py-3 text-sm outline-none"
                 >
                   {[1, 2, 3, 4, 5].map((score) => (
                     <option key={score} value={score}>
@@ -299,12 +443,12 @@ export default function FeedbackPage() {
                 </select>
               </label>
 
-              <label className="rounded-2xl bg-[#F4F1EA] p-4">
-                <span className="text-sm font-extrabold">Passion</span>
+              <label className="rounded-2xl bg-[#F6F1E8] p-4">
+                <span className="text-sm font-black">Passion</span>
                 <select
                   value={passion}
                   onChange={(event) => setPassion(Number(event.target.value))}
-                  className="mt-3 w-full rounded-xl border border-[#E5E0D8] bg-white px-3 py-3 text-sm outline-none"
+                  className="mt-3 w-full rounded-xl border border-[#E5DDD0] bg-white px-3 py-3 text-sm outline-none"
                 >
                   {[1, 2, 3, 4, 5].map((score) => (
                     <option key={score} value={score}>
@@ -314,12 +458,14 @@ export default function FeedbackPage() {
                 </select>
               </label>
 
-              <label className="rounded-2xl bg-[#F4F1EA] p-4">
-                <span className="text-sm font-extrabold">Culture Fit</span>
+              <label className="rounded-2xl bg-[#F6F1E8] p-4">
+                <span className="text-sm font-black">Culture Fit</span>
                 <select
                   value={cultureFit}
-                  onChange={(event) => setCultureFit(Number(event.target.value))}
-                  className="mt-3 w-full rounded-xl border border-[#E5E0D8] bg-white px-3 py-3 text-sm outline-none"
+                  onChange={(event) =>
+                    setCultureFit(Number(event.target.value))
+                  }
+                  className="mt-3 w-full rounded-xl border border-[#E5DDD0] bg-white px-3 py-3 text-sm outline-none"
                 >
                   {[1, 2, 3, 4, 5].map((score) => (
                     <option key={score} value={score}>
@@ -330,13 +476,8 @@ export default function FeedbackPage() {
               </label>
             </div>
 
-            <div className="mt-8 rounded-2xl bg-[#F4F1EA] p-4">
-              <h3 className="text-lg font-extrabold">Fit / Add</h3>
-
-              <p className="mt-1 text-sm text-slate-500">
-                Choose whether they feel like a strong fit, add something new,
-                or neither.
-              </p>
+            <div className="mt-8 rounded-2xl bg-[#F6F1E8] p-4">
+              <h3 className="text-lg font-black">Fit / Add</h3>
 
               <div className="mt-4 grid gap-2 md:grid-cols-3">
                 {(["Fit", "Add", "Neither"] as const).map((choice) => (
@@ -346,8 +487,8 @@ export default function FeedbackPage() {
                     onClick={() => setFitAddChoice(choice)}
                     className={`rounded-2xl border px-4 py-3 text-sm font-bold ${
                       fitAddChoice === choice
-                        ? "border-[#061A33] bg-[#061A33] text-[#F4F1EA]"
-                        : "border-[#061A33] bg-white text-[#061A33] hover:bg-[#F4F1EA]"
+                        ? "border-[#071E34] bg-[#071E34] text-[#F6F1E8]"
+                        : "border-[#071E34] bg-white text-[#071E34] hover:bg-[#F6F1E8]"
                     }`}
                   >
                     {choice}
@@ -363,7 +504,7 @@ export default function FeedbackPage() {
                     onChange={(event) =>
                       setFitAddScore(Number(event.target.value))
                     }
-                    className="mt-2 w-full rounded-xl border border-[#E5E0D8] bg-white px-3 py-3 text-sm font-normal outline-none"
+                    className="mt-2 w-full rounded-xl border border-[#E5DDD0] bg-white px-3 py-3 text-sm font-normal outline-none"
                   >
                     {[1, 2, 3, 4, 5].map((score) => (
                       <option key={score} value={score}>
@@ -382,13 +523,13 @@ export default function FeedbackPage() {
             </div>
 
             <label className="mt-8 block">
-              <span className="text-lg font-extrabold">Comment</span>
+              <span className="text-lg font-black">Comment</span>
 
               <textarea
                 value={comment}
                 onChange={(event) => setComment(event.target.value)}
                 placeholder="Write a specific note that would help during hash..."
-                className="mt-3 min-h-36 w-full rounded-2xl border border-[#E5E0D8] bg-white px-4 py-4 text-sm leading-6 outline-none"
+                className="mt-3 min-h-36 w-full rounded-2xl border border-[#E5DDD0] bg-white px-4 py-4 text-sm leading-6 outline-none"
               />
             </label>
 
@@ -396,25 +537,19 @@ export default function FeedbackPage() {
               <button
                 type="button"
                 onClick={() => router.push("/rush-board")}
-                className="rounded-full border border-[#061A33] px-6 py-3 text-sm font-bold text-[#061A33]"
+                disabled={saving}
+                className="rounded-full border border-[#071E34] px-6 py-3 text-sm font-bold text-[#071E34] disabled:opacity-50"
               >
                 Cancel
               </button>
 
               <button
                 type="button"
-                onClick={() => saveFeedback("board")}
-                className="rounded-full border border-[#061A33] bg-white px-6 py-3 text-sm font-bold text-[#061A33]"
+                onClick={saveFeedback}
+                disabled={saving}
+                className="rounded-full bg-[#071E34] px-6 py-3 text-sm font-bold text-[#F6F1E8] disabled:opacity-50"
               >
-                Save & Return
-              </button>
-
-              <button
-                type="button"
-                onClick={() => saveFeedback("next")}
-                className="rounded-full bg-[#061A33] px-6 py-3 text-sm font-bold text-[#F4F1EA]"
-              >
-                Save & Next
+                {saving ? "Saving..." : "Save & Return"}
               </button>
             </div>
           </section>

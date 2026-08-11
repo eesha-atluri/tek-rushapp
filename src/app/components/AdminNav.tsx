@@ -1,7 +1,8 @@
 "use client";
 
 import { useState } from "react";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
+import { supabase } from "@/lib/supabase";
 
 const adminLinks = [
   { href: "/admin", label: "Dashboard" },
@@ -14,6 +15,7 @@ const adminLinks = [
 
 export default function AdminNav() {
   const pathname = usePathname();
+  const router = useRouter();
   const [menuOpen, setMenuOpen] = useState(false);
 
   function isActive(href: string) {
@@ -22,6 +24,12 @@ export default function AdminNav() {
     }
 
     return pathname === href || pathname.startsWith(`${href}/`);
+  }
+
+  async function logout() {
+    await supabase.auth.signOut();
+    router.push("/");
+    router.refresh();
   }
 
   return (
@@ -59,12 +67,13 @@ export default function AdminNav() {
             );
           })}
 
-          <a
-            href="/"
+          <button
+            type="button"
+            onClick={logout}
             className="whitespace-nowrap rounded-full border border-white/30 px-5 py-3 text-white hover:bg-white/10"
           >
-            Login
-          </a>
+            Logout
+          </button>
         </div>
 
         {/* Mobile/tablet menu button */}
@@ -100,13 +109,13 @@ export default function AdminNav() {
               );
             })}
 
-            <a
-              href="/"
-              onClick={() => setMenuOpen(false)}
-              className="rounded-2xl border border-white/20 px-5 py-4 text-base font-bold text-white hover:bg-white/10"
+            <button
+              type="button"
+              onClick={logout}
+              className="rounded-2xl border border-white/20 px-5 py-4 text-left text-base font-bold text-white hover:bg-white/10"
             >
-              Login
-            </a>
+              Logout
+            </button>
           </div>
         </div>
       )}

@@ -1,7 +1,8 @@
 "use client";
 
 import { useState } from "react";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
+import { supabase } from "@/lib/supabase";
 
 const brotherLinks = [
   { href: "/rush-board", label: "Rush Board" },
@@ -10,10 +11,17 @@ const brotherLinks = [
 
 export default function BrotherNav() {
   const pathname = usePathname();
+  const router = useRouter();
   const [menuOpen, setMenuOpen] = useState(false);
 
   function isActive(href: string) {
     return pathname === href || pathname.startsWith(`${href}/`);
+  }
+
+  async function logout() {
+    await supabase.auth.signOut();
+    router.push("/");
+    router.refresh();
   }
 
   return (
@@ -51,12 +59,13 @@ export default function BrotherNav() {
             );
           })}
 
-          <a
-            href="/"
+          <button
+            type="button"
+            onClick={logout}
             className="whitespace-nowrap rounded-full border border-white/30 px-7 py-3 text-white hover:bg-white/10"
           >
-            Login
-          </a>
+            Logout
+          </button>
         </div>
 
         {/* Mobile menu button */}
@@ -92,13 +101,13 @@ export default function BrotherNav() {
               );
             })}
 
-            <a
-              href="/"
-              onClick={() => setMenuOpen(false)}
-              className="rounded-2xl border border-white/20 px-5 py-4 text-base font-bold text-white hover:bg-white/10"
+            <button
+              type="button"
+              onClick={logout}
+              className="rounded-2xl border border-white/20 px-5 py-4 text-left text-base font-bold text-white hover:bg-white/10"
             >
-              Login
-            </a>
+              Logout
+            </button>
           </div>
         </div>
       )}
