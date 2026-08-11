@@ -461,7 +461,12 @@ export default function AdminRusheeProfilePage() {
                   ))}
                 </div>
               </div>
-
+<a
+  href={`/admin/feedback/${rushee.id}`}
+  className="rounded-full bg-[#071E34] px-5 py-3 text-center text-sm font-bold text-[#F6F1E8]"
+>
+  Leave Admin Note
+</a>
               <a
                 href="/admin/rushees"
                 className="rounded-full border border-[#071E34] px-5 py-3 text-center text-sm font-bold text-[#071E34]"

@@ -852,6 +852,12 @@ export default function AdminHashPage() {
                       >
                         Admin Profile
                       </a>
+                      <a
+  href={`/admin/feedback/${selectedRushee.id}`}
+  className="rounded-2xl bg-[#071E34] px-5 py-3 text-center text-sm font-bold text-[#F6F1E8]"
+>
+  Leave Admin Note
+</a>
 
                       <label className="text-sm font-bold">
                         Move to
