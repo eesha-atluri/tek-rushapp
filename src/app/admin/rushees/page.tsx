@@ -161,6 +161,7 @@ export default function AdminRusheesPage() {
   const [year, setYear] = useState("");
   const [gender, setGender] = useState("");
   const [photo, setPhoto] = useState("");
+  const [uploadingPhoto, setUploadingPhoto] = useState(false);
   const [applicationSummary, setApplicationSummary] = useState("");
   const [selectedStage, setSelectedStage] = useState<RusheeStage>("Hash #1");
   const [selectedEventIds, setSelectedEventIds] = useState<string[]>([]);
@@ -406,6 +407,55 @@ export default function AdminRusheesPage() {
 
     if (error) throw error;
   }
+  async function uploadRusheePhoto(file: File) {
+  try {
+    setUploadingPhoto(true);
+    setErrorMessage("");
+
+    if (!file.type.startsWith("image/")) {
+      throw new Error("Please upload an image file.");
+    }
+
+    if (file.size > 5 * 1024 * 1024) {
+      throw new Error("Photo must be under 5 MB.");
+    }
+
+    const safeName =
+      name.trim().toLowerCase().replace(/[^a-z0-9]+/g, "-") || "rushee";
+
+    const extension = file.name.split(".").pop() || "jpg";
+
+    const filePath = `rush-2026/${Date.now()}-${safeName}.${extension}`;
+
+    const { error: uploadError } = await supabase.storage
+      .from("rushee-photos")
+      .upload(filePath, file, {
+        upsert: true,
+        contentType: file.type,
+      });
+
+    if (uploadError) {
+      throw uploadError;
+    }
+
+    const { data } = supabase.storage
+      .from("rushee-photos")
+      .getPublicUrl(filePath);
+
+    if (!data.publicUrl) {
+      throw new Error("Could not get public photo URL.");
+    }
+
+    setPhoto(data.publicUrl);
+  } catch (error) {
+    console.error("Photo upload failed:", error);
+    setErrorMessage(
+      error instanceof Error ? error.message : "Could not upload photo."
+    );
+  } finally {
+    setUploadingPhoto(false);
+  }
+}
 
   async function saveRushee() {
     const trimmedName = name.trim();
@@ -747,15 +797,51 @@ export default function AdminRusheesPage() {
               </label>
             </div>
 
-            <label className="text-sm font-bold">
-              Photo URL
-              <input
-                value={photo}
-                onChange={(event) => setPhoto(event.target.value)}
-                placeholder="https://..."
-                className="mt-2 w-full rounded-2xl border border-[#E5DDD0] bg-white px-4 py-3 text-sm font-normal outline-none"
-              />
-            </label>
+           <div>
+  <p className="text-sm font-bold">Photo</p>
+
+  {photo && (
+    <div className="mt-3 overflow-hidden rounded-2xl bg-[#F0E8DA]">
+      <img
+        src={photo}
+        alt="Rushee preview"
+        className="h-56 w-full object-cover object-center"
+      />
+    </div>
+  )}
+
+  <label className="mt-3 block text-sm font-bold">
+    Upload Photo
+    <input
+      type="file"
+      accept="image/jpeg,image/png,image/webp"
+      onChange={(event) => {
+        const file = event.target.files?.[0];
+        if (file) {
+          uploadRusheePhoto(file);
+        }
+      }}
+      disabled={uploadingPhoto || saving}
+      className="mt-2 w-full rounded-2xl border border-[#E5DDD0] bg-white px-4 py-3 text-sm font-normal outline-none disabled:opacity-50"
+    />
+  </label>
+
+  <label className="mt-3 block text-sm font-bold">
+    Photo URL
+    <input
+      value={photo}
+      onChange={(event) => setPhoto(event.target.value)}
+      placeholder="Upload a photo or paste a URL"
+      className="mt-2 w-full rounded-2xl border border-[#E5DDD0] bg-white px-4 py-3 text-sm font-normal outline-none"
+    />
+  </label>
+
+  {uploadingPhoto && (
+    <p className="mt-2 text-sm font-bold text-[#8A6500]">
+      Uploading photo...
+    </p>
+  )}
+</div>
 
             <label className="text-sm font-bold">
               Application Summary
