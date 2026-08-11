@@ -73,7 +73,7 @@ export default function Home() {
             </h1>
 
             <p className="mx-auto mt-6 max-w-2xl text-lg leading-9 text-slate-600 md:text-xl">
-              🕷️ (Email is case sensitive (use all lowercase))
+              🕷️
             </p>
 
             <div className="mx-auto mt-10 max-w-xl rounded-3xl border border-[#E5DDD0] bg-white p-6 text-left shadow-sm">
@@ -88,7 +88,7 @@ export default function Home() {
                 <input
                   value={email}
                   onChange={(event) => setEmail(event.target.value)}
-                  placeholder="Enter your UMich email"
+                  placeholder="Enter your UMich email (use all lowercase)"
                   className="mt-2 w-full rounded-2xl border border-[#E5DDD0] bg-white px-4 py-4 text-base font-normal outline-none"
                 />
               </label>
