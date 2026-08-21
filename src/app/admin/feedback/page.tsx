@@ -66,12 +66,6 @@ function getFeedbackEvents(item: FeedbackRow) {
   );
 }
 
-function getAverage(scores: number[]) {
-  if (scores.length === 0) return "N/A";
-
-  const total = scores.reduce((sum, score) => sum + score, 0);
-  return (total / scores.length).toFixed(1);
-}
 
 export default function AdminFeedbackPage() {
   const router = useRouter();
@@ -315,19 +309,6 @@ export default function AdminFeedbackPage() {
     return true;
   });
 
-  const communicationAvg = getAverage(
-    filteredFeedback.map((item) => item.communication)
-  );
-
-  const passionAvg = getAverage(filteredFeedback.map((item) => item.passion));
-
-  const cultureAvg = getAverage(
-    filteredFeedback.map((item) => item.culture_fit)
-  );
-
-  const fitAddAvg = getAverage(
-    filteredFeedback.map((item) => item.fit_add_score)
-  );
 
   if (loading || !currentBrother) {
     return (
@@ -370,36 +351,7 @@ export default function AdminFeedbackPage() {
           </p>
         )}
 
-        <div className="grid gap-4 md:grid-cols-5">
-          <div className="rounded-3xl border border-[#E5DDD0] bg-white p-5 shadow-sm">
-            <p className="text-sm text-slate-500">Notes</p>
-            <p className="mt-2 text-4xl font-black">
-              {filteredFeedback.length}
-            </p>
-          </div>
-
-          <div className="rounded-3xl border border-[#E5DDD0] bg-white p-5 shadow-sm">
-            <p className="text-sm text-slate-500">Comm Avg</p>
-            <p className="mt-2 text-4xl font-black">{communicationAvg}</p>
-          </div>
-
-          <div className="rounded-3xl border border-[#E5DDD0] bg-white p-5 shadow-sm">
-            <p className="text-sm text-slate-500">Passion Avg</p>
-            <p className="mt-2 text-4xl font-black">{passionAvg}</p>
-          </div>
-
-          <div className="rounded-3xl border border-[#E5DDD0] bg-white p-5 shadow-sm">
-            <p className="text-sm text-slate-500">Culture Avg</p>
-            <p className="mt-2 text-4xl font-black">{cultureAvg}</p>
-          </div>
-
-          <div className="rounded-3xl border border-[#E5DDD0] bg-white p-5 shadow-sm">
-            <p className="text-sm text-slate-500">Fit/Add Avg</p>
-            <p className="mt-2 text-4xl font-black">{fitAddAvg}</p>
-          </div>
-        </div>
-
-        <div className="mt-6 rounded-3xl border border-[#E5DDD0] bg-white p-5 shadow-sm">
+        <div className="rounded-3xl border border-[#E5DDD0] bg-white p-5 shadow-sm">
           <div className="grid gap-4 lg:grid-cols-[1fr_0.6fr_0.6fr_auto] lg:items-end">
             <label className="text-sm font-bold">
               Search
