@@ -45,6 +45,5 @@ next-env.d.ts
 .env.*.local
 *.env
 
-scripts/create-auth-users.mjs
 *brothers-roster*.sql
 *auth*.sql
