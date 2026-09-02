@@ -345,7 +345,7 @@ export default function FeedbackPage() {
           </p>
 
           <h1 className="mt-4 text-5xl font-black tracking-tight">
-            {existingFeedbackId ? "Edit Note" : "Leave Note"}
+            {existingFeedbackId ? "Edit Note" : "Give Feedback"}
           </h1>
 
           <p className="mt-4 max-w-2xl text-lg leading-8 text-white/70">
