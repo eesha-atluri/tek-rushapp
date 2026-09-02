@@ -34,7 +34,6 @@ type FeedbackRow = {
   brother_id: string;
   communication: number;
   passion: number;
-  culture_fit: number;
   fit_add_choice: "Fit" | "Add" | "Neither";
   fit_add_score: number;
   comment: string | null;
@@ -64,7 +63,6 @@ export default function AdminFeedbackNotePage() {
 
   const [communication, setCommunication] = useState(3);
   const [passion, setPassion] = useState(3);
-  const [cultureFit, setCultureFit] = useState(3);
   const [fitAddChoice, setFitAddChoice] = useState<"Fit" | "Add" | "Neither">(
     "Fit"
   );
@@ -136,7 +134,6 @@ export default function AdminFeedbackNotePage() {
           brother_id,
           communication,
           passion,
-          culture_fit,
           fit_add_choice,
           fit_add_score,
           comment
@@ -159,7 +156,6 @@ export default function AdminFeedbackNotePage() {
         setExistingFeedbackId(existing.id);
         setCommunication(existing.communication);
         setPassion(existing.passion);
-        setCultureFit(existing.culture_fit);
         setFitAddChoice(existing.fit_add_choice);
         setFitAddScore(existing.fit_add_score);
         setComment(existing.comment || "");
@@ -191,7 +187,6 @@ export default function AdminFeedbackNotePage() {
         setSelectedEvents([]);
         setCommunication(3);
         setPassion(3);
-        setCultureFit(3);
         setFitAddChoice("Fit");
         setFitAddScore(3);
         setComment("");
@@ -259,7 +254,6 @@ export default function AdminFeedbackNotePage() {
         brother_id: currentBrother.id,
         communication,
         passion,
-        culture_fit: cultureFit,
         fit_add_choice: fitAddChoice,
         fit_add_score: finalFitAddScore,
         comment,
@@ -425,7 +419,7 @@ export default function AdminFeedbackNotePage() {
               </div>
             </div>
 
-            <div className="mt-8 grid gap-4 md:grid-cols-3">
+            <div className="mt-8 grid gap-4 md:grid-cols-2">
               <label className="rounded-2xl bg-[#F6F1E8] p-4">
                 <span className="text-sm font-black">Communication</span>
                 <select
@@ -458,22 +452,6 @@ export default function AdminFeedbackNotePage() {
                 </select>
               </label>
 
-              <label className="rounded-2xl bg-[#F6F1E8] p-4">
-                <span className="text-sm font-black">Culture Fit</span>
-                <select
-                  value={cultureFit}
-                  onChange={(event) =>
-                    setCultureFit(Number(event.target.value))
-                  }
-                  className="mt-3 w-full rounded-xl border border-[#E5DDD0] bg-white px-3 py-3 text-sm outline-none"
-                >
-                  {[1, 2, 3, 4, 5].map((score) => (
-                    <option key={score} value={score}>
-                      {score}
-                    </option>
-                  ))}
-                </select>
-              </label>
             </div>
 
             <div className="mt-8 rounded-2xl bg-[#F6F1E8] p-4">

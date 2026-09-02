@@ -50,7 +50,6 @@ type FeedbackRow = {
   brother_id: string;
   communication: number;
   passion: number;
-  culture_fit: number;
   fit_add_choice: "Fit" | "Add" | "Neither";
   fit_add_score: number;
   comment: string | null;
@@ -237,7 +236,6 @@ export default function AdminHashPage() {
             brother_id,
             communication,
             passion,
-            culture_fit,
             fit_add_choice,
             fit_add_score,
             comment,
@@ -445,7 +443,6 @@ export default function AdminHashPage() {
           feedback.map((item) => item.communication)
         ),
         passionAvg: getAverage(feedback.map((item) => item.passion)),
-        cultureAvg: getAverage(feedback.map((item) => item.culture_fit)),
         fitAddAvg: getAverage(feedback.map((item) => item.fit_add_score)),
         comments,
       };
@@ -462,7 +459,6 @@ export default function AdminHashPage() {
       "Reviews",
       "Communication Avg",
       "Passion Avg",
-      "Culture Avg",
       "Fit/Add Avg",
       "Comments",
     ];
@@ -481,7 +477,6 @@ export default function AdminHashPage() {
           row.reviews,
           row.communicationAvg,
           row.passionAvg,
-          row.cultureAvg,
           row.fitAddAvg,
           row.comments,
         ]
@@ -906,15 +901,6 @@ export default function AdminHashPage() {
                       {getAverage(selectedFeedback.map((item) => item.passion))}
                     </p>
                     <p className="text-xs text-slate-500">Passion</p>
-                  </div>
-
-                  <div className="rounded-2xl bg-[#F6F1E8] p-4 text-center">
-                    <p className="text-xl font-black">
-                      {getAverage(
-                        selectedFeedback.map((item) => item.culture_fit)
-                      )}
-                    </p>
-                    <p className="text-xs text-slate-500">Culture</p>
                   </div>
 
                   <div className="rounded-2xl bg-[#F6F1E8] p-4 text-center">

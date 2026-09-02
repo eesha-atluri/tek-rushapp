@@ -404,7 +404,7 @@ export default function RushBoardPage() {
                           href={`/feedback/${rushee.id}`}
                           className="rounded-full bg-[#071E34] px-5 py-3 text-sm font-bold text-[#F6F1E8]"
                         >
-                          {reviewed ? "Edit Note" : "Leave Note"}
+                          {reviewed ? "Edit Note" : "Give Feedback"}
                         </a>
                       </div>
                     </div>

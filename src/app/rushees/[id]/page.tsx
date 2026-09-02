@@ -287,7 +287,7 @@ export default function RusheeProfilePage() {
                 href={`/feedback/${rushee.id}`}
                 className="rounded-full bg-[#071E34] px-6 py-3 text-center text-sm font-bold text-[#F6F1E8]"
               >
-                {hasMyFeedback ? "Edit Note" : "Leave Note"}
+                {hasMyFeedback ? "Edit Note" : "Give Feedback"}
               </a>
             </div>
           </section>

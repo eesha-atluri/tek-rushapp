@@ -55,7 +55,6 @@ type FeedbackRow = {
   brother_id: string;
   communication: number;
   passion: number;
-  culture_fit: number;
   fit_add_choice: "Fit" | "Add" | "Neither";
   fit_add_score: number;
   comment: string | null;
@@ -233,7 +232,6 @@ export default function AdminRusheeProfilePage() {
             brother_id,
             communication,
             passion,
-            culture_fit,
             fit_add_choice,
             fit_add_score,
             comment,
@@ -341,7 +339,6 @@ export default function AdminRusheeProfilePage() {
     feedback.map((item) => item.communication)
   );
   const passionAvg = getAverage(feedback.map((item) => item.passion));
-  const cultureAvg = getAverage(feedback.map((item) => item.culture_fit));
   const fitAddAvg = getAverage(feedback.map((item) => item.fit_add_score));
 
   const fitCount = feedback.filter(
@@ -488,10 +485,6 @@ export default function AdminRusheeProfilePage() {
                 <p className="text-xs text-slate-500">Passion</p>
               </div>
 
-              <div className="rounded-3xl border border-[#E5DDD0] bg-white p-5 text-center shadow-sm">
-                <p className="text-2xl font-black">{cultureAvg}</p>
-                <p className="text-xs text-slate-500">Culture</p>
-              </div>
 
               <div className="rounded-3xl border border-[#E5DDD0] bg-white p-5 text-center shadow-sm">
                 <p className="text-2xl font-black">{fitAddAvg}</p>
@@ -582,11 +575,6 @@ export default function AdminRusheeProfilePage() {
                       <div className="rounded-2xl bg-[#F6F1E8] p-4 text-center">
                         <p className="text-xl font-black">{item.passion}</p>
                         <p className="text-xs text-slate-500">Passion</p>
-                      </div>
-
-                      <div className="rounded-2xl bg-[#F6F1E8] p-4 text-center">
-                        <p className="text-xl font-black">{item.culture_fit}</p>
-                        <p className="text-xs text-slate-500">Culture</p>
                       </div>
                     </div>
 

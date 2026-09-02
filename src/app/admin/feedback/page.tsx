@@ -44,7 +44,6 @@ type FeedbackRow = {
   brother_id: string;
   communication: number;
   passion: number;
-  culture_fit: number;
   fit_add_choice: "Fit" | "Add" | "Neither";
   fit_add_score: number;
   comment: string | null;
@@ -111,7 +110,6 @@ export default function AdminFeedbackPage() {
           brother_id,
           communication,
           passion,
-          culture_fit,
           fit_add_choice,
           fit_add_score,
           comment,
@@ -205,7 +203,6 @@ export default function AdminFeedbackPage() {
         brotherEmail: brother?.email || "",
         communication: item.communication,
         passion: item.passion,
-        cultureFit: item.culture_fit,
         fitAddChoice: item.fit_add_choice,
         fitAddScore: item.fit_add_score,
         events,
@@ -224,7 +221,6 @@ export default function AdminFeedbackPage() {
       "Brother Email",
       "Communication",
       "Passion",
-      "Culture Fit",
       "Fit/Add Choice",
       "Fit/Add Score",
       "Events Talked At",
@@ -245,7 +241,6 @@ export default function AdminFeedbackPage() {
           row.brotherEmail,
           row.communication,
           row.passion,
-          row.cultureFit,
           row.fitAddChoice,
           row.fitAddScore,
           row.events,
@@ -474,13 +469,6 @@ export default function AdminFeedbackPage() {
                       <div className="rounded-2xl bg-[#F6F1E8] p-4 text-center">
                         <p className="text-xl font-black">{item.passion}</p>
                         <p className="text-xs text-slate-500">Passion</p>
-                      </div>
-
-                      <div className="rounded-2xl bg-[#F6F1E8] p-4 text-center">
-                        <p className="text-xl font-black">
-                          {item.culture_fit}
-                        </p>
-                        <p className="text-xs text-slate-500">Culture</p>
                       </div>
 
                       <div className="rounded-2xl bg-[#F6F1E8] p-4 text-center">
