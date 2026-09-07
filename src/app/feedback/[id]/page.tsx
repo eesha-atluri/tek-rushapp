@@ -455,7 +455,7 @@ export default function FeedbackPage() {
             </div>
 
             <div className="mt-8 rounded-2xl bg-[#F6F1E8] p-4">
-              <h3 className="text-lg font-black">Fit / Add</h3>
+              <h3 className="text-lg font-black"> Culture Fit / Add</h3>
 
               <div className="mt-4 grid gap-2 md:grid-cols-3">
                 {(["Fit", "Add", "Neither"] as const).map((choice) => (
