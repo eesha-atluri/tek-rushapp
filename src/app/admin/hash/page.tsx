@@ -909,7 +909,7 @@ export default function AdminHashPage() {
                         selectedFeedback.map((item) => item.fit_add_score)
                       )}
                     </p>
-                    <p className="text-xs text-slate-500">Fit/Add</p>
+                    <p className="text-xs text-slate-500">Culture Fit/Add</p>
                   </div>
 
                   <div className="rounded-2xl bg-[#F6F1E8] p-4 text-center">

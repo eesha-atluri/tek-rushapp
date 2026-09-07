@@ -488,7 +488,7 @@ export default function AdminRusheeProfilePage() {
 
               <div className="rounded-3xl border border-[#E5DDD0] bg-white p-5 text-center shadow-sm">
                 <p className="text-2xl font-black">{fitAddAvg}</p>
-                <p className="text-xs text-slate-500">Fit/Add</p>
+                <p className="text-xs text-slate-500">Culture Fit/Add</p>
               </div>
 
               <div className="rounded-3xl border border-[#E5DDD0] bg-white p-5 text-center shadow-sm">

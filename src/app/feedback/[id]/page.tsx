@@ -476,7 +476,7 @@ export default function FeedbackPage() {
 
               {fitAddChoice !== "Neither" && (
                 <label className="mt-4 block text-sm font-bold">
-                  Fit/Add Score
+                  Culture Fit/Add Score
                   <select
                     value={fitAddScore}
                     onChange={(event) =>
@@ -495,7 +495,7 @@ export default function FeedbackPage() {
 
               {fitAddChoice === "Neither" && (
                 <p className="mt-4 rounded-xl bg-white p-3 text-sm text-slate-600">
-                  Fit/Add score will automatically save as 0.
+                  Culture Fit/Add score will automatically save as 0.
                 </p>
               )}
             </div>

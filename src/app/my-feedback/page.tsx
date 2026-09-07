@@ -264,7 +264,7 @@ export default function MyFeedbackPage() {
                         <p className="text-xl font-black">
                           {item.fit_add_score}
                         </p>
-                        <p className="text-xs text-slate-500">Fit/Add</p>
+                        <p className="text-xs text-slate-500">Culture Fit/Add</p>
                       </div>
                     </div>
 
