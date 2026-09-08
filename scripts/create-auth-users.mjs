@@ -96,7 +96,7 @@ const users = [
   ["Rianna Nikhade", "riannan@umich.edu"],
   ["Lukas Mateju", "lmateju@umich.edu"],
   ["Margaret Periard", "perimar@umich.edu"],
-    ["Thewfic Anwar", "thewfic@umich.edu"],
+  ["Thewfic Anwar", "thewfic@umich.edu"],
   ["Brady Adams", "bradyads@umich.edu"],
   ["Yoav Manor", "ymanor@umich.edu"],
   ["Lucia Grasso", "luciagra@umich.edu"],
