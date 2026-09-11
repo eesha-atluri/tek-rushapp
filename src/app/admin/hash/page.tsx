@@ -717,8 +717,8 @@ export default function AdminHashPage() {
           </div>
         </div>
 
-        <div className="grid gap-6 lg:grid-cols-[0.85fr_1.15fr]">
-          <aside className="rounded-3xl border border-[#E5DDD0] bg-white p-5 shadow-sm">
+        <div className="grid gap-6 lg:grid-cols-[0.85fr_1.15fr] lg:items-start">
+          <aside className="rounded-3xl border border-[#E5DDD0] bg-white p-5 shadow-sm lg:sticky lg:top-20 lg:max-h-[calc(100vh-6rem)] lg:overflow-y-auto">
             <h2 className="text-xl font-black">{selectedStage}</h2>
 
             <p className="mt-1 text-sm text-slate-500">

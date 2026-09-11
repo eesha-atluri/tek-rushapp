@@ -108,10 +108,17 @@ const users = [
   ["Zaara Seemeen", "zseemeen@umich.edu"],
   ["Ellie Gruber", "eegruber@umich.edu"],
   ["Owen Bogda", "obogda@umich.edu"],
-  ["Avary Sheldon", "avaryksheldon@gmail.com"],
+  ["Avary Sheldon", "aksheldo@umich.edu"],
   ["Alex Habarth", "alexhab@umich.edu"],
   ["Sean Kang", "seanyk@umich.edu"],
   ["Sahasra Potla", "sahasra@umich.edu"],
+  ["Connor Welch", "cwelchiv@umich.edu"],
+  ["Derek Wurzer", "dwurzer@umich.edu"],
+  ["Aiden Kim", "aidenkim@umich.edu"],
+  ["Jase Smith", "shmitty@umich.edu"],
+  ["Gloria Chang", "changlo@umich.edu"],
+  ["Lynn Van", "lynnvan@umich.edu"],
+  ["Akshaya Rachamadugu", "aksharac@umich.edu"],
 ];
 
 for (const [name, email] of users) {
