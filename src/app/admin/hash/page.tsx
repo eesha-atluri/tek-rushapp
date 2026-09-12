@@ -1034,7 +1034,7 @@ export default function AdminHashPage() {
                 </div>
 
                 <div className="mt-6">
-                  <p className="text-sm font-black">Recent Comments</p>
+                  <p className="text-sm font-black">Comments</p>
 
                   <div className="mt-3 space-y-2">
                     {selectedFeedback.length === 0 && (
@@ -1043,7 +1043,7 @@ export default function AdminHashPage() {
                       </p>
                     )}
 
-                    {selectedFeedback.slice(0, 5).map((item) => (
+                    {selectedFeedback.map((item) => (
                       <p
                         key={item.id}
                         className="rounded-2xl bg-[#F6F1E8] p-4 text-sm leading-6 text-slate-700"
