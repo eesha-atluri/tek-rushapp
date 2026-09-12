@@ -100,6 +100,14 @@ function getRusheeEvents(rushee: RusheeRow) {
     .filter((event): event is EventRow => Boolean(event));
 }
 
+function getSummaryBullets(summary: string | null) {
+  if (!summary) return [];
+  return summary
+    .split(/(?:^|\s)-\s/)
+    .map((s) => s.trim())
+    .filter(Boolean);
+}
+
 function getRusheeFeedback(rushee: RusheeRow) {
   return toArray(rushee.feedback);
 }
@@ -875,16 +883,26 @@ export default function AdminHashPage() {
                   </div>
                 </div>
 
-                <div className="mt-6 rounded-2xl bg-[#F6F1E8] p-4">
-                  <p className="text-xs font-bold uppercase tracking-wide text-slate-500">
-                    Application Summary
-                  </p>
+              <div className="mt-6 rounded-2xl bg-[#F6F1E8] p-4">
+  <p className="text-xs font-bold uppercase tracking-wide text-slate-500">
+    Application Summary
+  </p>
 
-                  <p className="mt-2 text-sm leading-6 text-slate-700">
-                    {selectedRushee.application_summary ||
-                      "No summary provided."}
-                  </p>
-                </div>
+  {getSummaryBullets(selectedRushee.application_summary).length > 0 ? (
+    <ul className="mt-2 space-y-1.5 text-sm leading-6 text-slate-700">
+      {getSummaryBullets(selectedRushee.application_summary).map((line, i) => (
+        <li key={i} className="flex gap-2">
+          <span className="text-[#C69A3D]">•</span>
+          <span>{line}</span>
+        </li>
+      ))}
+    </ul>
+  ) : (
+    <p className="mt-2 text-sm leading-6 text-slate-700">
+      No summary provided.
+    </p>
+  )}
+</div>
 
                 <div className="mt-6 grid grid-cols-2 gap-3 md:grid-cols-5">
                   <div className="rounded-2xl bg-[#F6F1E8] p-4 text-center">
