@@ -76,6 +76,15 @@ type HashDecisionTableRow = {
   stage: RusheeStage;
 };
 
+type CommentSortField =
+  | "score"
+  | "communication"
+  | "passion"
+  | "fit_add_score"
+  | "updated_at";
+
+type RusheeSortField = "number" | "ranking";
+
 const stages: RusheeStage[] = [
   "Hash #1",
   "Hash #2",
@@ -117,6 +126,31 @@ function getAverage(scores: number[]) {
 
   const total = scores.reduce((sum, score) => sum + score, 0);
   return (total / scores.length).toFixed(1);
+}
+
+function getFeedbackScore(item: FeedbackRow) {
+  return (item.communication + item.passion + item.fit_add_score) / 3;
+}
+
+function getCommentSortValue(item: FeedbackRow, field: CommentSortField): number {
+  if (field === "score") {
+    return getFeedbackScore(item);
+  }
+  if (field === "updated_at") {
+    return new Date(item.updated_at).getTime();
+  }
+  return item[field];
+}
+
+function getRusheeRankingScore(rushee: RusheeRow) {
+  const feedback = getRusheeFeedback(rushee);
+  if (feedback.length === 0) return -Infinity; // unranked rushees sort last
+
+  const total = feedback.reduce(
+    (sum, item) => sum + getFeedbackScore(item),
+    0
+  );
+  return total / feedback.length;
 }
 
 function getNextStage(stage: RusheeStage): RusheeStage {
@@ -191,6 +225,9 @@ export default function AdminHashPage() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [errorMessage, setErrorMessage] = useState("");
+
+  const [commentSort, setCommentSort] = useState<CommentSortField>("score");
+  const [rusheeSort, setRusheeSort] = useState<RusheeSortField>("number");
 
   useEffect(() => {
     checkAuthAndLoad();
@@ -295,100 +332,100 @@ export default function AdminHashPage() {
   }
 
   async function updateStage(
-  rushee: RusheeRow,
-  newStage: RusheeStage,
-  decision?: HashDecision
-) {
-  try {
-    setSaving(true);
-    setErrorMessage("");
+    rushee: RusheeRow,
+    newStage: RusheeStage,
+    decision?: HashDecision
+  ) {
+    try {
+      setSaving(true);
+      setErrorMessage("");
 
-    const oldStage = stageByRusheeId[rushee.id] || "Hash #1";
-    const currentViewingStage = selectedStage;
+      const oldStage = stageByRusheeId[rushee.id] || "Hash #1";
+      const currentViewingStage = selectedStage;
 
-    const resolvedDecision =
-      decision || getDecisionFromStageChange(oldStage, newStage) || undefined;
+      const resolvedDecision =
+        decision || getDecisionFromStageChange(oldStage, newStage) || undefined;
 
-    const { data, error } = await supabase
-      .from("hash_decisions")
-      .upsert(
-        {
-          rushee_id: rushee.id,
-          stage: newStage,
-          updated_at: new Date().toISOString(),
-        },
-        {
-          onConflict: "rushee_id",
-        }
-      )
-      .select("rushee_id, stage")
-      .single();
+      const { data, error } = await supabase
+        .from("hash_decisions")
+        .upsert(
+          {
+            rushee_id: rushee.id,
+            stage: newStage,
+            updated_at: new Date().toISOString(),
+          },
+          {
+            onConflict: "rushee_id",
+          }
+        )
+        .select("rushee_id, stage")
+        .single();
 
-    if (error) {
-      throw error;
+      if (error) {
+        throw error;
+      }
+
+      const savedStage = (data?.stage || newStage) as RusheeStage;
+
+      const updatedStageMap = {
+        ...stageByRusheeId,
+        [rushee.id]: savedStage,
+      };
+
+      setStageByRusheeId(updatedStageMap);
+
+      if (resolvedDecision) {
+        setLastDecisionByRushee((current) => ({
+          ...current,
+          [rushee.id]: resolvedDecision,
+        }));
+      }
+
+      // Stay on the category you were already viewing.
+      setSelectedStage(currentViewingStage);
+
+      // If the rushee moved out of this category, select the next rushee in the same category.
+      if (savedStage !== currentViewingStage) {
+        const query = search.toLowerCase();
+
+        const remainingRusheesInCurrentCategory = rusheeList.filter((item) => {
+          if (item.id === rushee.id) return false;
+
+          const itemStage = updatedStageMap[item.id] || "Hash #1";
+          const events = getRusheeEvents(item)
+            .map((event) => event.name)
+            .join(" ");
+
+          const matchesSearch =
+            item.name.toLowerCase().includes(query) ||
+            String(item.number).includes(query) ||
+            (item.major || "").toLowerCase().includes(query) ||
+            (item.year || "").toLowerCase().includes(query) ||
+            (item.gender || "").toLowerCase().includes(query) ||
+            events.toLowerCase().includes(query);
+
+          return itemStage === currentViewingStage && matchesSearch;
+        });
+
+        setSelectedRusheeId(remainingRusheesInCurrentCategory[0]?.id || null);
+      } else {
+        // If the rushee stayed in the same category, keep them selected.
+        setSelectedRusheeId(rushee.id);
+      }
+    } catch (error: any) {
+      console.error("Hash decision update failed:", error);
+
+      const readableError =
+        typeof error === "object"
+          ? JSON.stringify(error, Object.getOwnPropertyNames(error), 2)
+          : String(error);
+
+      setErrorMessage(readableError);
+      alert(readableError);
+    } finally {
+      setSaving(false);
     }
-
-    const savedStage = (data?.stage || newStage) as RusheeStage;
-
-    const updatedStageMap = {
-      ...stageByRusheeId,
-      [rushee.id]: savedStage,
-    };
-
-    setStageByRusheeId(updatedStageMap);
-
-    if (resolvedDecision) {
-      setLastDecisionByRushee((current) => ({
-        ...current,
-        [rushee.id]: resolvedDecision,
-      }));
-    }
-
-    // Stay on the category you were already viewing.
-    setSelectedStage(currentViewingStage);
-
-    // If the rushee moved out of this category, select the next rushee in the same category.
-    if (savedStage !== currentViewingStage) {
-      const query = search.toLowerCase();
-
-      const remainingRusheesInCurrentCategory = rusheeList.filter((item) => {
-        if (item.id === rushee.id) return false;
-
-        const itemStage = updatedStageMap[item.id] || "Hash #1";
-        const events = getRusheeEvents(item)
-          .map((event) => event.name)
-          .join(" ");
-
-        const matchesSearch =
-          item.name.toLowerCase().includes(query) ||
-          String(item.number).includes(query) ||
-          (item.major || "").toLowerCase().includes(query) ||
-          (item.year || "").toLowerCase().includes(query) ||
-          (item.gender || "").toLowerCase().includes(query) ||
-          events.toLowerCase().includes(query);
-
-        return itemStage === currentViewingStage && matchesSearch;
-      });
-
-      setSelectedRusheeId(remainingRusheesInCurrentCategory[0]?.id || null);
-    } else {
-      // If the rushee stayed in the same category, keep them selected.
-      setSelectedRusheeId(rushee.id);
-    }
-  } catch (error: any) {
-    console.error("Hash decision update failed:", error);
-
-    const readableError =
-      typeof error === "object"
-        ? JSON.stringify(error, Object.getOwnPropertyNames(error), 2)
-        : String(error);
-
-    setErrorMessage(readableError);
-    alert(readableError);
-  } finally {
-    setSaving(false);
   }
-}
 
   async function handleDecision(rushee: RusheeRow, decision: HashDecision) {
     const currentStage = stageByRusheeId[rushee.id] || "Hash #1";
@@ -537,7 +574,7 @@ export default function AdminHashPage() {
     counts.hash1 + counts.hash2 + counts.hash3 + counts.final;
 
   const displayedRushees = useMemo(() => {
-    return rusheeList.filter((rushee) => {
+    const filtered = rusheeList.filter((rushee) => {
       const stage = stageByRusheeId[rushee.id] || "Hash #1";
       const events = getRusheeEvents(rushee)
         .map((event) => event.name)
@@ -554,7 +591,15 @@ export default function AdminHashPage() {
 
       return stage === selectedStage && matchesSearch;
     });
-  }, [rusheeList, stageByRusheeId, selectedStage, search]);
+
+    if (rusheeSort === "ranking") {
+      return [...filtered].sort(
+        (a, b) => getRusheeRankingScore(b) - getRusheeRankingScore(a)
+      );
+    }
+
+    return [...filtered].sort((a, b) => a.number - b.number);
+  }, [rusheeList, stageByRusheeId, selectedStage, search, rusheeSort]);
 
   useEffect(() => {
     if (displayedRushees.length === 0) {
@@ -727,7 +772,23 @@ export default function AdminHashPage() {
 
         <div className="grid gap-6 lg:grid-cols-[0.85fr_1.15fr] lg:items-start">
           <aside className="rounded-3xl border border-[#E5DDD0] bg-white p-5 shadow-sm lg:sticky lg:top-20 lg:max-h-[calc(100vh-6rem)] lg:overflow-y-auto">
-            <h2 className="text-xl font-black">{selectedStage}</h2>
+            <div className="flex items-center justify-between gap-3">
+              <h2 className="text-xl font-black">{selectedStage}</h2>
+
+              <label className="text-xs font-bold text-slate-500">
+                Sort by
+                <select
+                  value={rusheeSort}
+                  onChange={(event) =>
+                    setRusheeSort(event.target.value as RusheeSortField)
+                  }
+                  className="ml-2 rounded-xl border border-[#E5DDD0] bg-white px-3 py-1.5 text-xs font-normal outline-none"
+                >
+                  <option value="number">Rush Number</option>
+                  <option value="ranking">Ranking</option>
+                </select>
+              </label>
+            </div>
 
             <p className="mt-1 text-sm text-slate-500">
               {displayedRushees.length} rushee
@@ -855,11 +916,11 @@ export default function AdminHashPage() {
                         Admin Profile
                       </a>
                       <a
-  href={`/admin/feedback/${selectedRushee.id}`}
-  className="rounded-2xl bg-[#071E34] px-5 py-3 text-center text-sm font-bold text-[#F6F1E8]"
->
-  Leave Admin Note
-</a>
+                        href={`/admin/feedback/${selectedRushee.id}`}
+                        className="rounded-2xl bg-[#071E34] px-5 py-3 text-center text-sm font-bold text-[#F6F1E8]"
+                      >
+                        Leave Admin Note
+                      </a>
 
                       <label className="text-sm font-bold">
                         Move to
@@ -883,26 +944,28 @@ export default function AdminHashPage() {
                   </div>
                 </div>
 
-              <div className="mt-6 rounded-2xl bg-[#F6F1E8] p-4">
-  <p className="text-xs font-bold uppercase tracking-wide text-slate-500">
-    Application Summary
-  </p>
+                <div className="mt-6 rounded-2xl bg-[#F6F1E8] p-4">
+                  <p className="text-xs font-bold uppercase tracking-wide text-slate-500">
+                    Application Summary
+                  </p>
 
-  {getSummaryBullets(selectedRushee.application_summary).length > 0 ? (
-    <ul className="mt-2 space-y-1.5 text-sm leading-6 text-slate-700">
-      {getSummaryBullets(selectedRushee.application_summary).map((line, i) => (
-        <li key={i} className="flex gap-2">
-          <span className="text-[#C69A3D]">•</span>
-          <span>{line}</span>
-        </li>
-      ))}
-    </ul>
-  ) : (
-    <p className="mt-2 text-sm leading-6 text-slate-700">
-      No summary provided.
-    </p>
-  )}
-</div>
+                  {getSummaryBullets(selectedRushee.application_summary).length > 0 ? (
+                    <ul className="mt-2 space-y-1.5 text-sm leading-6 text-slate-700">
+                      {getSummaryBullets(selectedRushee.application_summary).map(
+                        (line, i) => (
+                          <li key={i} className="flex gap-2">
+                            <span className="text-[#C69A3D]">•</span>
+                            <span>{line}</span>
+                          </li>
+                        )
+                      )}
+                    </ul>
+                  ) : (
+                    <p className="mt-2 text-sm leading-6 text-slate-700">
+                      No summary provided.
+                    </p>
+                  )}
+                </div>
 
                 <div className="mt-6 grid grid-cols-2 gap-3 md:grid-cols-5">
                   <div className="rounded-2xl bg-[#F6F1E8] p-4 text-center">
@@ -1034,7 +1097,26 @@ export default function AdminHashPage() {
                 </div>
 
                 <div className="mt-6">
-                  <p className="text-sm font-black">Comments</p>
+                  <div className="flex items-center justify-between">
+                    <p className="text-sm font-black">All Comments</p>
+
+                    <label className="text-xs font-bold text-slate-500">
+                      Sort by
+                      <select
+                        value={commentSort}
+                        onChange={(event) =>
+                          setCommentSort(event.target.value as CommentSortField)
+                        }
+                        className="ml-2 rounded-xl border border-[#E5DDD0] bg-white px-3 py-1.5 text-xs font-normal outline-none"
+                      >
+                        <option value="score">Overall Score</option>
+                        <option value="communication">Communication</option>
+                        <option value="passion">Passion</option>
+                        <option value="fit_add_score">Fit/Add Score</option>
+                        <option value="updated_at">Most Recent</option>
+                      </select>
+                    </label>
+                  </div>
 
                   <div className="mt-3 space-y-2">
                     {selectedFeedback.length === 0 && (
@@ -1043,17 +1125,24 @@ export default function AdminHashPage() {
                       </p>
                     )}
 
-                    {selectedFeedback.map((item) => (
-                      <p
-                        key={item.id}
-                        className="rounded-2xl bg-[#F6F1E8] p-4 text-sm leading-6 text-slate-700"
-                      >
-                        <span className="font-bold text-[#071E34]">
-                          {item.brothers?.name || "Unknown Brother"}:
-                        </span>{" "}
-                        {item.comment || "No comment provided."}
-                      </p>
-                    ))}
+                    {[...selectedFeedback]
+                      .sort(
+                        (a, b) =>
+                          getCommentSortValue(b, commentSort) -
+                          getCommentSortValue(a, commentSort)
+                      )
+                      .map((item, index) => (
+                        <p
+                          key={item.id}
+                          className="rounded-2xl bg-[#F6F1E8] p-4 text-sm leading-6 text-slate-700"
+                        >
+                          <span className="font-bold text-[#071E34]">
+                            #{index + 1} ·{" "}
+                            {item.brothers?.name || "Unknown Brother"}:
+                          </span>{" "}
+                          {item.comment || "No comment provided."}
+                        </p>
+                      ))}
                   </div>
                 </div>
               </div>
